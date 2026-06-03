@@ -187,11 +187,7 @@ app.post("/orders", authcheck, async (req, res) => {
 
   const requiredAmt = qty * price;
 
-  if (BALANCES[userId].INR.available < requiredAmt) {
-    return res.json({
-      msg: "Insufficient Balance",
-    });
-  }
+ 
   if ((side == "BUY")) {
     if (BALANCES[userId].INR.available < requiredAmt) {
     return res.json({
@@ -215,20 +211,21 @@ app.post("/orders", authcheck, async (req, res) => {
     BALANCES[userId][symbol].available -=qty;
     BALANCES[userId][symbol].locked +=qty;
   }
-  const remainingQty = FilledOrders(incoming,userId, price, side, qty, type, symbol);
 
- if (remainingQty > 0) {
   const incoming: Order = {
     id: crypto.randomUUID(),
     userId,
     symbol,
     side,
     type,
-    qty: remainingQty,
+    qty,
     price,
-    filledQty: qty - remainingQty,
+    filledQty:0
   };
+  const remainingQty = FilledOrders(incoming,userId, price, side, qty, type, symbol);
 
+ if (remainingQty > 0) {
+  
   ORDERS.push(incoming);
 
   if (side === "BUY") {
@@ -236,13 +233,13 @@ app.post("/orders", authcheck, async (req, res) => {
       ORDERBOOK[symbol].bids[price] = [];
     }
 
-    ORDERBOOK[symbol].bids[price].push(order);
+    ORDERBOOK[symbol].bids[price].push(incoming);
   } else {
     if (!ORDERBOOK[symbol].asks[price]) {
       ORDERBOOK[symbol].asks[price] = [];
     }
 
-    ORDERBOOK[symbol].asks[price].push(order);
+    ORDERBOOK[symbol].asks[price].push(incoming);
   }
 }
 return res.json({
@@ -279,9 +276,6 @@ const FilledOrders = (incoming,userId, price, side, qty, type, symbol) => {
           remaining = 0;
         }
         flipBalance(userId, sellOrders.userId, matchedQty, askPrice, symbol);
-        if (remaining === 0) {
-          break;
-        }
 
         FILLS.push({
             id:crypto.randomUUID(),
@@ -299,10 +293,10 @@ const FilledOrders = (incoming,userId, price, side, qty, type, symbol) => {
     }
   } else if (type === "LIMIT" && side === "SELL") {
     const buys = ORDERBOOK[symbol].bids;
-    const buyprices =   Object.keys(buys).map(Number).sort((a, b) => a - b);
+    const buyprices =   Object.keys(buys).map(Number).sort((a, b) => b-a);
     for(const buyprice of buyprices){
         if(buyprice<price){
-            return;
+            return remaining;
         }
         const ordersAtPrice = buys[buyprice];
         for(const buyorder of ordersAtPrice){
@@ -320,15 +314,15 @@ const FilledOrders = (incoming,userId, price, side, qty, type, symbol) => {
             
             FILLS.push({
                 id:crypto.randomUUID(),
-                buyOrderId:buyorder.userId,
-                sellOrderId:incoming.userId,
+                buyOrderId:buyorder.id,
+                sellOrderId:incoming.id,
                 symbol,
                 qty:matchedQty,
                 price:buyprice
             })
             incoming.filledQty+=matchedQty;
             if(remaining===0){
-                return;
+                return remaining;
             }
         }
     }
@@ -397,7 +391,7 @@ const FilledOrders = (incoming,userId, price, side, qty, type, symbol) => {
             })
             incoming.filledQty+=matchedQty;
             if(remaining===0){
-                return;
+                return remaining;
             }
         }
     }
