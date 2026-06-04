@@ -1,5 +1,6 @@
 import type{Request,Response ,NextFunction} from "express";
 import jwt  from "jsonwebtoken";
+import { error } from "node:console";
 
 function authcheck(req:Request,res:Response,next:NextFunction){
     const authHeader = req.headers.authorization;
@@ -11,16 +12,17 @@ function authcheck(req:Request,res:Response,next:NextFunction){
         })
     }
 
-    const token = authHeader.split('')[1];
+    const token = authHeader.split(" ")[1];
 
     try {
-        const decoded = jwt.verify(token as string,"mysecret")
+        const decoded:string = jwt.verify(token,"mysecret");
         (req as any).user=decoded;
         next();
     } catch (e) {
+        console.log(e)
         return  res.status(401).json({
             success:false,
-            error:"SERVER ERROR"
+            error:error
         })
     }
 }

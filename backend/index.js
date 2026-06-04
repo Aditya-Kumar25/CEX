@@ -32,8 +32,13 @@ class Animal {
         this.habitat = habitat;
         this.diet = diet;
     }
+
+    add(x,y){
+        console.log(x+y)
+    }
 }
 
 const a1 = new Animal("Tiger", "Orange", 5, "Forest", "Carnivore");
 
 console.log(a1);
+a1.add(20,30)
