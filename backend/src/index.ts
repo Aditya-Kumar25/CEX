@@ -21,7 +21,7 @@ interface Stock {
   symbol: string;
 }
 
-type status = "FILLED" | "PARTIAL" | "OPEN" | "CLOSED";
+type status = "FILLED" | "PARTIAL" | "OPEN" | "CLOSED" | "CANCELLED";
 
 type Side = "BUY" | "SELL";
 
@@ -230,7 +230,7 @@ app.post("/orders", authcheck, async (req, res) => {
     }
     BALANCES[userId].INR.available -= requiredAmt;
     BALANCES[userId].INR.locked += requiredAmt;
-  } else if(side=="SELL") {
+  } else if (side == "SELL") {
     if (!BALANCES[userId][symbol]) {
       return res.json({
         msg: `You don't own this ${symbol} balance`,
@@ -327,20 +327,112 @@ app.post("/orders", authcheck, async (req, res) => {
   });
 });
 
-app.delete("/order:orderid", authcheck, (req, res) => {
-  const { orderid, userId,symbol } = req.body;
-  const isOrder = ORDERS.find(o=>o===orderid);
-  if(!isOrder){
+app.delete("/order/:orderId", authcheck, (req, res) => {
+  const { orderId } = req.body;
+  const currentUser = (req as any).user.userId;
+
+  const isOrder = ORDERS.find((o) => o.id === orderId);
+  if (!isOrder) {
     return res.status(404).json({
-      msg:"No order found against it bhai!! Sahab"
-    })
+      msg: "No order found against it bhai!! Sahab",
+    });
   }
-  ORDERBOOK[symbol].asks
+  if (isOrder.userId !== currentUser) {
+    return res.status(403).json({
+      msg: "Forbidden",
+    });
+  }
+  if (isOrder.status === "FILLED" || isOrder.status === "CANCELLED") {
+    return res.status(400).json({
+      msg: "Order cannot be cancelled",
+    });
+  }
+  const remainingQty = isOrder.qty - isOrder.filledQty;
+
+  const totalAmt = remainingQty * isOrder.price;
+  if (isOrder.side == "BUY") {
+    BALANCES[currentUser].INR.available += totalAmt;
+    BALANCES[currentUser].INR.locked -= totalAmt;
+
+    ORDERBOOK[isOrder.symbol]?.bids[isOrder.price] = ORDERBOOK[
+      isOrder.symbol
+    ]?.bids[isOrder.price]?.filter((o) => o.id == orderId);
+
+    if (ORDERBOOK[isOrder.symbol]?.bids[isOrder.price]?.length === 0) {
+      delete ORDERBOOK[isOrder.symbol]?.bids[isOrder.price];
+    }
+  } else {
+    BALANCES[currentUser][isOrder.symbol].available += remainingQty;
+    BALANCES[currentUser][isOrder.symbol].locked -= remainingQty;
+
+    ORDERBOOK[isOrder.symbol]?.asks[isOrder.price] = ORDERBOOK[
+      isOrder.symbol
+    ]?.asks[isOrder.price]?.filter((o) => o.id == orderId);
+
+    if (ORDERBOOK[isOrder.symbol]?.bids[isOrder.price]?.length === 0) {
+      delete ORDERBOOK[isOrder.symbol]?.bids[isOrder.price];
+    }
+  }
+
+  isOrder.status = "CANCELLED";
+
+  res.json({
+    msg: "Order Cancelled",
+  });
 });
 
-app.get("orders", (req, res) => {});
+app.get("/orders/:userId", (req, res) => {
+  const { userId } = req.params;
+  const orders = ORDERS.filter((o) => o.userId === userId);
 
-app.get;
+  return res.json({
+    orders,
+  });
+});
+
+
+app.get("/orderbook/:symbol",(req,res)=>{
+  const asks = [];
+  const bids = [];
+  for(const price in ORDERBOOK[symbol].asks){
+    const totalasks = ORDERBOOK[symbol].asks[price]
+          .reduce((acc,curr)=>acc+curr.qty,0);
+    asks.push(price,totalasks);
+  }
+  for(const price in ORDERBOOK[symbol].bids){
+    const totalbids = ORDERBOOK[symbol].bids[price]
+          .reduce((acc,curr)=>acc+curr.qty,0);
+    bids.push(price,totalbids);
+  }
+
+  res.json({
+    asks,bids
+  })  
+})
+app.get("/fills/:symbol", (req,res)=>{
+      const {symbol} = req.body();
+
+      const fills = FILLS.filter((f)=>f.symbol === symbol);
+
+      return res.json({
+        fills
+      })
+})
+
+
+app.get("/stocks", (req, res) => {
+  res.json(STOCKS);
+});
+
+app.get("/balances",authcheck,(req,res)=>{
+  const currentUser = (req as any).user.userId;
+  
+  const balance = BALANCES[currentUser];
+
+  return res.json({
+    balance
+  })
+})
 
 const FilledOrders = (
   incoming,
@@ -374,7 +466,6 @@ const FilledOrders = (
     const askPrices = Object.keys(asks)
       .map(Number)
       .sort((a, b) => a - b);
-    let currentStatus = "";
     for (const askPrice of askPrices) {
       if (askPrice > price) {
         break;
@@ -454,7 +545,7 @@ const FilledOrders = (
           executionPrice: buyprice,
           remainingBeforeTrade: remaining,
         });
-        flipBalance(buyOrder.userId, userId, matchedQty, buyprice, symbol)
+        flipBalance(buyOrder.userId, userId, matchedQty, buyprice, symbol);
 
         FILLS.push({
           id: crypto.randomUUID(),
