@@ -4,12 +4,18 @@ import jwt from "jsonwebtoken";
 import authcheck from "./authmiddleware";
 import { randomUUID } from "node:crypto";
 import crypto from "node:crypto";
+import { createClient } from "redis";
+import { untilWeGotBack } from "./untilwegotback";
+
+const client   = await createClient({})
+  .on("error",(err)=>console.log("Redis Client Error",err))
+  .connect();
 
 const app = express();
 
 app.use(express.json());
 
-interface Users {
+interface Users { 
   id: string;
   username: string;
   password: string;
@@ -126,7 +132,7 @@ app.post("/signup", async (req: Request, res: Response) => {
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
-  const exists = USERS.find((user) => user.username === username);
+  const exists = await USERS.find((user) => user.username === username);
   if (!exists) {
     return res.json({
       msg: "wrong creds",
@@ -173,6 +179,27 @@ app.get("/seed", (req, res) => {
     msg: "seeded",
   });
 });
+
+
+app.post("/order", async (req, res) => {
+    // matching
+    const userId = req.userId;
+    const {type, price, qty, market_id, side} = req.body;
+    const identifier = Math.random();
+    await client.lPush("incoming-order", JSON.stringify({
+        type, price, qty, market_id, side, userId, identifier
+    }))
+
+    const returnedData = await untilWeGotBack(identifier);
+
+    res.json({msg:"Order Placed",filledQty:returnedData})
+
+})
+
+
+
+
+
 
 app.post("/orders", authcheck, async (req, res) => {
   const { userId, side, type, symbol, price, qty, status } = req.body;
@@ -354,7 +381,7 @@ app.delete("/order/:orderId", authcheck, (req, res) => {
     BALANCES[currentUser].INR.available += totalAmt;
     BALANCES[currentUser].INR.locked -= totalAmt;
 
-    ORDERBOOK[isOrder.symbol]?.bids[isOrder.price] = ORDERBOOK[
+    ORDERBOOK[isOrder.symbol].bids[isOrder.price] = ORDERBOOK[
       isOrder.symbol
     ]?.bids[isOrder.price]?.filter((o) => o.id == orderId);
 
@@ -365,7 +392,7 @@ app.delete("/order/:orderId", authcheck, (req, res) => {
     BALANCES[currentUser][isOrder.symbol].available += remainingQty;
     BALANCES[currentUser][isOrder.symbol].locked -= remainingQty;
 
-    ORDERBOOK[isOrder.symbol]?.asks[isOrder.price] = ORDERBOOK[
+    ORDERBOOK[isOrder.symbol].asks[isOrder.price] = ORDERBOOK[
       isOrder.symbol
     ]?.asks[isOrder.price]?.filter((o) => o.id == orderId);
 
