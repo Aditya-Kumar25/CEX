@@ -6,6 +6,8 @@ const subscribe = await createClient()
         console.log("Redis client error",err)
     })
     .connect();
+
+
 async function pollQueue() {
     const response = await subscribe.brPop("response-queue",1);
     if(!response){
