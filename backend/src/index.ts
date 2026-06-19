@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import crypto from "node:crypto";
 import { createClient } from "redis";
 import { untilWeGotBack } from "./untilwegotback";
-
+import {prisma} from "../globalprisma"
 
 
 const client   = await createClient({})
@@ -96,9 +96,13 @@ const ORDERBOOK: Record<string, SymbolOrderBook> = {
 };
 
 app.post("/signup", async (req: Request, res: Response) => {
-  const { username, password } = req.body;
+  const { email,username, password } = req.body;
 
-  const exists = USERS.find((user) => user.username === username);
+  const exists = await prisma.user.findUnique({
+    where:{
+      email
+    }
+  });
   if (exists) {
     return res.json({
       msg: "username already taken",
@@ -108,15 +112,19 @@ app.post("/signup", async (req: Request, res: Response) => {
   const salt = 10;
   const HashedPassword = await bcrypt.hash(password, salt);
 
-  const user: Users = {
-    id: crypto.randomUUID(),
-    username,
-    password: HashedPassword,
-  };
+  // const user: Users = {
+  //   id: crypto.randomUUID(),
+  //   username,
+  //   password: HashedPassword,
+  // };
 
-  USERS.push(user);
+   const userr = await prisma.user.create({
+    data:{
+      email,username,password:HashedPassword
+    }
+   })
 
-  BALANCES[user.id] = {
+  BALANCES[userr.id] = {
     INR: {
       available: 0,
       locked: 0,
@@ -127,14 +135,18 @@ app.post("/signup", async (req: Request, res: Response) => {
 
   res.json({
     msg: "user created successfully",
-    userId: user.id,
+    userId: userr.id,
   });
 });
 
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
-  const exists = await USERS.find((user) => user.username === username);
+  const exists =await prisma.user.findUnique({
+    where:{
+      username
+    }
+  })
   if (!exists) {
     return res.json({
       msg: "wrong creds",
@@ -150,7 +162,7 @@ app.post("/login", async (req, res) => {
   }
   const token = jwt.sign(
     {
-      username: exists?.username,
+      userId: exists.id,
     },
     "mysecret",
   );
@@ -160,40 +172,43 @@ app.post("/login", async (req, res) => {
     token,
   });
 });
-app.get("/seed", (req, res) => {
-  const buyer = USERS.find((u) => u.username === "Pahla User");
-  const seller = USERS.find((u) => u.username === "Dusra User");
-
-  if (!buyer || !seller) {
-    return res.json({
-      msg: "Create users first",
-    });
-  }
-
-  BALANCES[buyer.id].INR.available = 10000;
-
-  BALANCES[seller.id]["AXIS"] = {
-    available: 100,
-    locked: 0,
-  };
-
-  res.json({
-    msg: "seeded",
-  });
-});
 
 
-app.post("/order", async (req, res) => {
-    // matching
-    const userId = req.userId;
-    const {type, price, qty, market_id, side} = req.body;
+
+app.post("/order",authcheck, async (req, res) => {
+    const userId = (req as any).userId;
+    console.log(userId);
+    const req_type="order";
+    const {type, price, qty,status,symbol, side} = req.body;
+
+    if(side!=="BUY" || side!=="LIMIT"){
+      return res.json({
+        msg:"Invalid Side Selection"
+      })
+    }
+    if(type === "LIMIT" && (typeof price != "number"|| price<=0)){
+      return res.json({
+        msg:"Invalid type or price"
+      })
+    }
+    if(typeof qty !== "number" || qty<=0){
+      return res.json({
+        msg:"qty is not a valid qty"
+      })
+    }
+
     const identifier = Math.random();
     await client.lPush("incoming-order", JSON.stringify({
-        type, price, qty, market_id, side, userId, identifier
+        type, price, qty, side,status,symbol, userId, identifier,req_type
     }))
 
-    const returnedData = await untilWeGotBack(identifier);
-
+    
+    const returnedData:any = await untilWeGotBack(identifier);
+    if(!returnedData.success){
+        res.status(402).json({
+          msg:"Insufficient availability of amount/qty or no stock avl for this symbol"
+        })
+    }
     res.json({msg:"Order Placed",filledQty:returnedData})
 
 })
@@ -241,16 +256,7 @@ app.post("/orders", authcheck, async (req, res) => {
 
   const requiredAmt = qty * price;
 
-  console.log("====== NEW ORDER ======");
-  console.log({
-    userId,
-    side,
-    type,
-    symbol,
-    price,
-    status,
-    qty,
-  });
+
   if (side == "BUY" && type === "LIMIT") {
     if (BALANCES[userId].INR.available < requiredAmt) {
       return res.json({
@@ -267,7 +273,7 @@ app.post("/orders", authcheck, async (req, res) => {
     }
     if (BALANCES[userId][symbol].available < qty) {
       return res.json({
-        msg: `insufficient  ${symbol} balance`,
+        msg: `insufficient  ${symbol} quantity`,
       });
     }
     BALANCES[userId][symbol].available -= qty;
@@ -538,7 +544,7 @@ const FilledOrders = (
         incoming.filledQty += matchedQty;
       }
       if (remaining === 0) {
-        break;
+        return remaining;
       }
     }
   } else if (type === "LIMIT" && side === "SELL") {
