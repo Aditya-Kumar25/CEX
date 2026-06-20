@@ -1,29 +1,48 @@
 import { createClient } from "redis";
 
-let pendingResolves = {};
-const subscribe = await createClient()
-    .on("error",(err)=>{
-        console.log("Redis client error",err)
-    })
-    .connect();
+const pendingResolves: Record<string, Function> = {};
 
+const subscribe = await createClient()
+  .on("error", (err) => {
+    console.log("Redis client error", err);
+  })
+  .connect();
 
 async function pollQueue() {
-    const response = await subscribe.brPop("response-queue",1);
-    if(!response){
-        pollQueue()
-    }else{
-        const parsed = JSON.parse(response.element);
-        if(parsed.identifier && pendingResolves[parsed.identifier]){
-        pendingResolves[parsed.identifier]({filledQty:parsed.filledQty})
-        }
-        pollQueue();
-    }
+  const response = await subscribe.brPop("response-queue", 1);
+
+  if (!response) {
+    return pollQueue();
+  }
+
+  const parsed = JSON.parse(response.element);
+
+  console.log("QUEUE RESPONSE:", parsed);
+
+  if (
+    parsed.identifier &&
+    pendingResolves[parsed.identifier]
+  ) {
+    console.log("RESOLVING:", parsed.identifier);
+
+    pendingResolves[parsed.identifier]({
+      success: parsed.success,
+      filledQty: parsed.filledQty,
+      msg: parsed.msg,
+    });
+
+    delete pendingResolves[parsed.identifier];
+  }
+
+  pollQueue();
 }
+
 pollQueue();
 
-export function untilWeGotBack(identifier:number){
-    return new Promise((resolve,reject)=>{
-        pendingResolves[identifier] = resolve;
-    })
+export function untilWeGotBack(identifier: string) {
+  return new Promise((resolve) => {
+    console.log("REGISTERING:", identifier);
+    pendingResolves[identifier] = resolve;
+  });
 }
+
