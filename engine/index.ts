@@ -582,5 +582,35 @@ else if (parsed.req_type === "get-orderbook") {
     asks,
     bids,
   }));
+  } else if (parsed.req_type === "get-fills") {
+  const { symbol, identifier } = parsed;
+
+  const fills = FILLS.filter((f) => f.symbol === symbol);
+
+  publisherClient.lPush("response-queue", JSON.stringify({
+    identifier,
+    success: true,
+    fills,
+  }));
+} else if (parsed.req_type === "get-stocks") {
+  const { identifier } = parsed;
+
+  publisherClient.lPush("response-queue", JSON.stringify({
+    identifier,
+    success: true,
+    stocks: STOCKS,
+  }));
+}else if (parsed.req_type === "get-balance") {
+  const { currentUser, identifier } = parsed;
+
+  ensureUserBalance(currentUser);
+  const balance = BALANCES[currentUser];
+
+  publisherClient.lPush("response-queue", JSON.stringify({
+    identifier,
+    success: true,
+    balance,
+  }));
 }
 }
+

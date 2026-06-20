@@ -233,15 +233,27 @@ app.get("/stocks", (req, res) => {
   res.json(STOCKS);
 });
 
-app.get("/balances",authcheck,(req,res)=>{
-  const currentUser = (req as any).user.userId;
-  
-  const balance = BALANCES[currentUser];
+app.get("/balances", authcheck, async (req, res) => {
+  const currentUser = (req as any).userId;
+  const req_type = "get-balance";
+  const identifier = crypto.randomUUID();
 
-  return res.json({
-    balance
-  })
-})
+  await client.lPush("incoming-order", JSON.stringify({
+    req_type,
+    currentUser,
+    identifier,
+  }));
+
+  const returnedData: any = await untilWeGotBack(identifier);
+
+  if (!returnedData.success) {
+    return res.status(returnedData.statusCode || 400).json({
+      msg: returnedData.msg,
+    });
+  }
+
+  res.json({ balance: returnedData.balance });
+});
 
 app.listen(3000, () => {
   console.log("active");

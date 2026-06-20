@@ -25,12 +25,7 @@ async function pollQueue() {
   ) {
     console.log("RESOLVING:", parsed.identifier);
 
-    pendingResolves[parsed.identifier]({
-      success: parsed.success,
-      filledQty: parsed.filledQty,
-      orders:parsed.orders,
-      msg: parsed.msg,
-    });
+    pendingResolves[parsed.identifier](parsed);
 
     delete pendingResolves[parsed.identifier];
   }
