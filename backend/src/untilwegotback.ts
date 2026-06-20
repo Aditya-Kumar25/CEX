@@ -28,6 +28,7 @@ async function pollQueue() {
     pendingResolves[parsed.identifier]({
       success: parsed.success,
       filledQty: parsed.filledQty,
+      orders:parsed.orders,
       msg: parsed.msg,
     });
 

@@ -11,6 +11,7 @@ import { createClient } from "redis";
 import { untilWeGotBack } from "./untilwegotback";
 console.log("INDEX DB URL =", process.env.DATABASE_URL);
 import {prisma} from "../globalprisma"
+import { Client } from "pg";
 console.log("INDEX DB URL 1=", process.env.DATABASE_URL);
 
 const client   = await createClient({})
@@ -123,7 +124,7 @@ app.post("/order",authcheck, async (req, res) => {
     const identifier = crypto.randomUUID();
     
     console.log("ORDER RECEIVED:", identifier);
-    await client.lPush("incoming-order", JSON.stringify({
+    await client.lPush("incoming-req", JSON.stringify({
         type, price, qty, side,status,symbol, userId, identifier,req_type
     }))
 
@@ -139,97 +140,93 @@ app.post("/order",authcheck, async (req, res) => {
 
 })
 
-app.delete("/order/:orderId", authcheck, (req, res) => {
-  const { orderId } = req.body;
-  const currentUser = (req as any).user.userId;
+app.delete("/order/:orderId", authcheck, async (req, res) => {
+  const { orderId } = req.params;         
+  const currentUser = (req as any).userId; 
 
-  const isOrder = ORDERS.find((o) => o.id === orderId);
-  if (!isOrder) {
-    return res.status(404).json({
-      msg: "No order found against it bhai!! Sahab",
+  const req_type = "delete-order";
+  const identifier = crypto.randomUUID();
+
+  await client.lPush("incoming-req", JSON.stringify({
+    req_type,
+    orderId,
+    currentUser,
+    identifier,
+  }));
+
+  const returnedData: any = await untilWeGotBack(identifier);
+
+  if (!returnedData.success) {
+    return res.status(returnedData.statusCode || 400).json({
+      msg: returnedData.msg,
     });
   }
-  if (isOrder.userId !== currentUser) {
-    return res.status(403).json({
-      msg: "Forbidden",
-    });
-  }
-  if (isOrder.status === "FILLED" || isOrder.status === "CANCELLED") {
-    return res.status(400).json({
-      msg: "Order cannot be cancelled",
-    });
-  }
-  const remainingQty = isOrder.qty - isOrder.filledQty;
 
-  const totalAmt = remainingQty * isOrder.price;
-  if (isOrder.side == "BUY") {
-    BALANCES[currentUser].INR.available += totalAmt;
-    BALANCES[currentUser].INR.locked -= totalAmt;
-
-    ORDERBOOK[isOrder.symbol].bids[isOrder.price] = ORDERBOOK[
-      isOrder.symbol
-    ]?.bids[isOrder.price]?.filter((o) => o.id == orderId);
-
-    if (ORDERBOOK[isOrder.symbol]?.bids[isOrder.price]?.length === 0) {
-      delete ORDERBOOK[isOrder.symbol]?.bids[isOrder.price];
-    }
-  } else {
-    BALANCES[currentUser][isOrder.symbol].available += remainingQty;
-    BALANCES[currentUser][isOrder.symbol].locked -= remainingQty;
-
-    ORDERBOOK[isOrder.symbol].asks[isOrder.price] = ORDERBOOK[
-      isOrder.symbol
-    ]?.asks[isOrder.price]?.filter((o) => o.id == orderId);
-
-    if (ORDERBOOK[isOrder.symbol]?.bids[isOrder.price]?.length === 0) {
-      delete ORDERBOOK[isOrder.symbol]?.bids[isOrder.price];
-    }
-  }
-
-  isOrder.status = "CANCELLED";
-
-  res.json({
-    msg: "Order Cancelled",
-  });
+  res.json({ msg: "Order Cancelled" });
 });
 
-app.get("/orders/:userId", (req, res) => {
-  const { userId } = req.params;
-  const orders = ORDERS.filter((o) => o.userId === userId);
+app.get("/orders/:userId", authcheck, async(req, res) => {
+  const userId = (req as any).userId;
+  const req_type="get orders"
+  const identifier = crypto.randomUUID();
+    await client.lPush("incoming-req", JSON.stringify({
+    req_type,
+    userId,
+    identifier,
+  }))
 
-  return res.json({
-    orders,
-  });
+ const returnedData:any = await untilWeGotBack(identifier);
+ if (!returnedData.success) {
+    return res.status(returnedData.statusCode || 400).json({
+      msg: returnedData.msg,
+    });
+  }
+  res.json(returnedData.orders)
 });
 
 
-app.get("/orderbook/:symbol",(req,res)=>{
-  const asks = [];
-  const bids = [];
-  for(const price in ORDERBOOK[symbol].asks){
-    const totalasks = ORDERBOOK[symbol].asks[price]
-          .reduce((acc,curr)=>acc+curr.qty,0);
-    asks.push(price,totalasks);
+app.get("/orderbook/:symbol", async (req, res) => {
+  const { symbol } = req.params;
+  const req_type = "get-orderbook";
+  const identifier = crypto.randomUUID();
+
+  await client.lPush("incoming-order", JSON.stringify({
+    req_type,
+    symbol,
+    identifier,
+  }));
+
+  const returnedData: any = await untilWeGotBack(identifier);
+
+  if (!returnedData.success) {
+    return res.status(returnedData.statusCode || 400).json({
+      msg: returnedData.msg,
+    });
   }
-  for(const price in ORDERBOOK[symbol].bids){
-    const totalbids = ORDERBOOK[symbol].bids[price]
-          .reduce((acc,curr)=>acc+curr.qty,0);
-    bids.push(price,totalbids);
+
+  res.json({ asks: returnedData.asks, bids: returnedData.bids });
+});
+app.get("/fills/:symbol", async (req, res) => {
+  const { symbol } = req.params;
+  const req_type = "get-fills";
+  const identifier = crypto.randomUUID();
+
+  await client.lPush("incoming-order", JSON.stringify({
+    req_type,
+    symbol,
+    identifier,
+  }));
+
+  const returnedData: any = await untilWeGotBack(identifier);
+
+  if (!returnedData.success) {
+    return res.status(returnedData.statusCode || 400).json({
+      msg: returnedData.msg,
+    });
   }
 
-  res.json({
-    asks,bids
-  })  
-})
-app.get("/fills/:symbol", (req,res)=>{
-      const {symbol} = req.body();
-
-      const fills = FILLS.filter((f)=>f.symbol === symbol);
-
-      return res.json({
-        fills
-      })
-})
+  res.json({ fills: returnedData.fills });
+});
 
 
 app.get("/stocks", (req, res) => {

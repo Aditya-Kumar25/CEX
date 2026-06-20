@@ -374,15 +374,14 @@ function flipBalance(
 }
 
 while (1) {
-  const response = await client.brPop("incoming-order", 1);
+  const response = await client.brPop("incoming-req", 1);
   if (!response) {
     continue;
   }
   const parsed = JSON.parse(response.element);
 
   if (parsed.req_type === "order") {
-    const { type, price, qty, side, status, symbol, userId, identifier } =
-      parsed;
+    const { type, price, qty, side, status, symbol, userId, identifier } = parsed;
 
     ensureUserBalance(userId);
     const requiredAmt = price * qty;
@@ -472,7 +471,116 @@ while (1) {
       JSON.stringify({ filledQty, identifier, success: true }),
     );
   }
-  // else if(){
+  
+  else if (parsed.req_type === "delete-order") {
+  const { orderId, currentUser, identifier } = parsed;
 
-  // }
+  const isOrder = ORDERS.find((o) => o.id === orderId);
+
+  if (!isOrder) {
+    publisherClient.lPush("response-queue", JSON.stringify({
+      identifier,
+      success: false,
+      statusCode: 404,
+      msg: "No order found against it bhai!! Sahab",
+    }));
+    continue;
+  }
+
+  if (isOrder.userId !== currentUser) {
+    publisherClient.lPush("response-queue", JSON.stringify({
+      identifier,
+      success: false,
+      statusCode: 403,
+      msg: "Forbidden",
+    }));
+    continue;
+  }
+
+  if (isOrder.status === "FILLED" || isOrder.status === "CANCELLED") {
+    publisherClient.lPush("response-queue", JSON.stringify({
+      identifier,
+      success: false,
+      statusCode: 400,
+      msg: "Order cannot be cancelled",
+    }));
+    continue;
+  }
+
+  const remainingQty = isOrder.qty - isOrder.filledqty;
+  const totalAmt = remainingQty * isOrder.price;
+
+  if (isOrder.side === "BUY") {
+    BALANCES[currentUser].INR.available += totalAmt;
+    BALANCES[currentUser].INR.locked -= totalAmt;
+
+    const bidsAtPrice = ORDERBOOK[isOrder.symbol]?.bids[isOrder.price];
+    if (bidsAtPrice) {
+      ORDERBOOK[isOrder.symbol].bids[isOrder.price] =
+        bidsAtPrice.filter((o) => o.id !== orderId);
+
+      if (ORDERBOOK[isOrder.symbol].bids[isOrder.price].length === 0) {
+        delete ORDERBOOK[isOrder.symbol].bids[isOrder.price];
+      }
+    }
+  } else {
+    BALANCES[currentUser][isOrder.symbol].available += remainingQty;
+    BALANCES[currentUser][isOrder.symbol].locked -= remainingQty;
+
+    const asksAtPrice = ORDERBOOK[isOrder.symbol]?.asks[isOrder.price];
+    if (asksAtPrice) {
+      ORDERBOOK[isOrder.symbol].asks[isOrder.price] =
+        asksAtPrice.filter((o) => o.id !== orderId);
+
+      if (ORDERBOOK[isOrder.symbol].asks[isOrder.price].length === 0) {
+        delete ORDERBOOK[isOrder.symbol].asks[isOrder.price];
+      }
+    }
+  }
+
+  isOrder.status = "CANCELLED";
+
+  publisherClient.lPush("response-queue", JSON.stringify({
+    identifier,
+    success: true,
+    msg: "Order Cancelled",
+  }));
+}
+else if(parsed.req_type==="get orders"){
+  const {userId , identifier} = parsed;
+  const orders = ORDERS.filter((o) => o.userId === userId);
+  publisherClient.lPush("response-queue",JSON.stringify({
+    identifier,success:true,orders
+  }))
+}
+else if (parsed.req_type === "get-orderbook") {
+  const { symbol, identifier } = parsed;
+
+  if (!ORDERBOOK[symbol]) {
+    publisherClient.lPush("response-queue", JSON.stringify({
+      identifier,
+      success: false,
+      statusCode: 404,
+      msg: "Unknown symbol",
+    }));
+    continue;
+  }
+
+  const asks = Object.entries(ORDERBOOK[symbol].asks).map(([price, orders]) => ({
+    price: Number(price),
+    qty: orders.reduce((acc, curr) => acc + curr.qty, 0),
+  }));
+
+  const bids = Object.entries(ORDERBOOK[symbol].bids).map(([price, orders]) => ({
+    price: Number(price),
+    qty: orders.reduce((acc, curr) => acc + curr.qty, 0),
+  }));
+
+  publisherClient.lPush("response-queue", JSON.stringify({
+    identifier,
+    success: true,
+    asks,
+    bids,
+  }));
+}
 }
