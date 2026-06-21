@@ -34,8 +34,9 @@ async function pollQueue() {
 }
 
 pollQueue();
-
+console.log("gotbak k bahar")
 export function untilWeGotBack(identifier: string) {
+    console.log("gotback k andar")
   return new Promise((resolve) => {
     console.log("REGISTERING:", identifier);
     pendingResolves[identifier] = resolve;

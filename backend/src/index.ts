@@ -26,13 +26,11 @@ app.use(express.json());
 app.post("/signup", async (req: Request, res: Response) => {
   const { email,username, password } = req.body;
 
-  console.log("1")
   const exists = await prisma.user.findUnique({
     where:{
       email
     }
   });
-  console.log("2")
   if (exists) {
     return res.json({
       msg: "username already taken",
@@ -55,7 +53,6 @@ app.post("/signup", async (req: Request, res: Response) => {
     },
   };
 
-  console.log(USERS);
 
   res.json({
     msg: "user created successfully",
@@ -124,7 +121,7 @@ app.post("/order",authcheck, async (req, res) => {
     const identifier = crypto.randomUUID();
     
     console.log("ORDER RECEIVED:", identifier);
-    await client.lPush("incoming-req", JSON.stringify({
+    await client.lPush("incoming-order", JSON.stringify({
         type, price, qty, side,status,symbol, userId, identifier,req_type
     }))
 
@@ -147,7 +144,7 @@ app.delete("/order/:orderId", authcheck, async (req, res) => {
   const req_type = "delete-order";
   const identifier = crypto.randomUUID();
 
-  await client.lPush("incoming-req", JSON.stringify({
+  await client.lPush("incoming-order", JSON.stringify({
     req_type,
     orderId,
     currentUser,
@@ -165,17 +162,18 @@ app.delete("/order/:orderId", authcheck, async (req, res) => {
   res.json({ msg: "Order Cancelled" });
 });
 
-app.get("/orders/:userId", authcheck, async(req, res) => {
+app.get("/getorder", authcheck, async(req, res) => {
   const userId = (req as any).userId;
   const req_type="get orders"
   const identifier = crypto.randomUUID();
-    await client.lPush("incoming-req", JSON.stringify({
+    await client.lPush("incoming-order", JSON.stringify({
     req_type,
     userId,
     identifier,
   }))
 
  const returnedData:any = await untilWeGotBack(identifier);
+ console.log("GET ORDERS RESPONSE", returnedData);
  if (!returnedData.success) {
     return res.status(returnedData.statusCode || 400).json({
       msg: returnedData.msg,
@@ -229,8 +227,24 @@ app.get("/fills/:symbol", async (req, res) => {
 });
 
 
-app.get("/stocks", (req, res) => {
-  res.json(STOCKS);
+app.get("/stocks", async (req, res) => {
+  const req_type = "get-stocks";
+  const identifier = crypto.randomUUID();
+
+  await client.lPush("incoming-order", JSON.stringify({
+    req_type,
+    identifier,
+  }));
+
+  const returnedData: any = await untilWeGotBack(identifier);
+
+  if (!returnedData.success) {
+    return res.status(returnedData.statusCode || 400).json({
+      msg: returnedData.msg,
+    });
+  }
+
+  res.json(returnedData.stocks);
 });
 
 app.get("/balances", authcheck, async (req, res) => {
@@ -243,8 +257,9 @@ app.get("/balances", authcheck, async (req, res) => {
     currentUser,
     identifier,
   }));
-
+  console.log("Sending data to queue , babes")
   const returnedData: any = await untilWeGotBack(identifier);
+  console.log(returnedData)
 
   if (!returnedData.success) {
     return res.status(returnedData.statusCode || 400).json({

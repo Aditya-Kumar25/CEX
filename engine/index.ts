@@ -78,10 +78,14 @@ function ensureUserBalance(userId: string) {
   if (!BALANCES[userId]) {
     BALANCES[userId] = {
       INR: { available: 10000, locked: 0 },
+
+      BTC: {
+        available: 20,
+        locked: 0,
+      },
     };
   }
 }
-
 function FilledOrders(
   incoming: Order,
   userId: string,
@@ -374,7 +378,7 @@ function flipBalance(
 }
 
 while (1) {
-  const response = await client.brPop("incoming-req", 1);
+  const response = await client.brPop("incoming-order", 1);
   if (!response) {
     continue;
   }
@@ -545,8 +549,9 @@ while (1) {
     success: true,
     msg: "Order Cancelled",
   }));
-}
+  }
 else if(parsed.req_type==="get orders"){
+  console.log(ORDERS);
   const {userId , identifier} = parsed;
   const orders = ORDERS.filter((o) => o.userId === userId);
   publisherClient.lPush("response-queue",JSON.stringify({
@@ -601,6 +606,7 @@ else if (parsed.req_type === "get-orderbook") {
     stocks: STOCKS,
   }));
 }else if (parsed.req_type === "get-balance") {
+  console.log("entered the queue")
   const { currentUser, identifier } = parsed;
 
   ensureUserBalance(currentUser);
@@ -613,4 +619,5 @@ else if (parsed.req_type === "get-orderbook") {
   }));
 }
 }
+
 
