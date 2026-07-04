@@ -43,12 +43,7 @@ app.post("/signup", async (req: Request, res: Response) => {
     }
    })
 
-  BALANCES[userr.id] = {
-    INR: {
-      available: 0,
-      locked: 0,
-    },
-  };
+ 
 
 
   res.json({

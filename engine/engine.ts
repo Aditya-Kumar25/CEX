@@ -8,11 +8,9 @@ const publisherClient = await createClient({})
   .on("error", (err) => console.log("Redis Client Error", err))
   .connect();
 
-
 const wsClient = await createClient({})
-  .on("error", (e)=>console.log("Redis Client Error",e))
-  .connect()
-
+  .on("error", (e) => console.log("Redis Client Error", e))
+  .connect();
 
 type side = "BUY" | "SELL";
 type OrderType = "LIMIT" | "MARKET";
@@ -161,6 +159,19 @@ function FilledOrders(
           price: askPrice,
           qty: matchedQty,
         });
+
+         wsClient.lPush(
+          "ws-queue",
+          JSON.stringify({
+            stream: `trade.${symbol}`,
+            value: {
+              symbol,
+              price: askPrice,
+              qty: matchedQty,
+            },
+          }),
+        );
+
         console.log("FILL CREATED");
 
         console.log(FILLS[FILLS.length - 1]);
@@ -217,6 +228,18 @@ function FilledOrders(
           qty: matchedQty,
           price: buyprice,
         });
+
+        wsClient.lPush(
+          "ws-queue",
+          JSON.stringify({
+            stream: `trade.${symbol}`,
+            value: {
+              symbol,
+              price: buyprice,
+              qty: matchedQty,
+            },
+          }),
+        );
         console.log("FILL CREATED");
 
         console.log(FILLS[FILLS.length - 1]);
@@ -265,6 +288,18 @@ function FilledOrders(
           price: askPrice,
           qty: matchedQty,
         });
+
+         wsClient.lPush(
+          "ws-queue",
+          JSON.stringify({
+            stream: `trade.${symbol}`,
+            value: {
+              symbol,
+              price: askPrice,
+              qty: matchedQty,
+            },
+          }),
+        );
         incoming.filledqty += matchedQty;
 
         if (remaining === 0) {
@@ -316,6 +351,19 @@ function FilledOrders(
           qty: matchedQty,
           price: buyPrice,
         });
+
+         wsClient.lPush(
+          "ws-queue",
+          JSON.stringify({
+            stream: `trade.${symbol}`,
+            value: {
+              symbol,
+              price: buyPrice,
+              qty: matchedQty,
+            },
+          }),
+        );
+
         incoming.filledqty += matchedQty;
         if (remaining === 0) {
           return remaining;
@@ -390,7 +438,8 @@ while (1) {
   const parsed = JSON.parse(response.element);
 
   if (parsed.req_type === "order") {
-    const { type, price, qty, side, status, symbol, userId, identifier } = parsed;
+    const { type, price, qty, side, status, symbol, userId, identifier } =
+      parsed;
 
     ensureUserBalance(userId);
     const requiredAmt = price * qty;
@@ -410,7 +459,10 @@ while (1) {
       BALANCES[userId].INR.available -= requiredAmt;
       BALANCES[userId].INR.locked += requiredAmt;
     } else if (side === "SELL") {
-      if (!BALANCES[userId][symbol] || BALANCES[userId][symbol].available < qty) {
+      if (
+        !BALANCES[userId][symbol] ||
+        BALANCES[userId][symbol].available < qty
+      ) {
         publisherClient.lPush(
           "response-queue",
           JSON.stringify({
@@ -482,163 +534,199 @@ while (1) {
     wsClient.lPush(
       "ws-queue",
       JSON.stringify({
-      
-        stream:`depth.${symbol}`,
-        value:{bids:Object.entries(ORDERBOOK[symbol].bids).map(([price,orders])=>({
-            price : Number(price),
-            qty : orders.reduce((acc,curr)=>acc+curr.qty,0)
-        })),
-        asks:Object.entries(ORDERBOOK[symbol].asks).map(([price,orders])=>({
-            price : Number(price),
-            qty : orders.reduce((acc,curr)=>acc+curr.qty,0)
-        }))}
-        
-      })
-    )
-  }
-  
-  else if (parsed.req_type === "delete-order") {
-  const { orderId, currentUser, identifier } = parsed;
+        stream: `depth.${symbol}`,
+        value: {
+          bids: Object.entries(ORDERBOOK[symbol].bids).map(
+            ([price, orders]) => ({
+              price: Number(price),
+              qty: orders.reduce((acc, curr) => acc + curr.qty, 0),
+            }),
+          ),
+          asks: Object.entries(ORDERBOOK[symbol].asks).map(
+            ([price, orders]) => ({
+              price: Number(price),
+              qty: orders.reduce((acc, curr) => acc + curr.qty, 0),
+            }),
+          ),
+        },
+      }),
+    );
+  } else if (parsed.req_type === "delete-order") {
+    const { orderId, currentUser, identifier } = parsed;
 
-  const isOrder = ORDERS.find((o) => o.id === orderId);
+    const isOrder = ORDERS.find((o) => o.id === orderId);
 
-  if (!isOrder) {
-    publisherClient.lPush("response-queue", JSON.stringify({
-      identifier,
-      success: false,
-      statusCode: 404,
-      msg: "No order found against it bhai!! Sahab",
-    }));
-    continue;
-  }
+    if (!isOrder) {
+      publisherClient.lPush(
+        "response-queue",
+        JSON.stringify({
+          identifier,
+          success: false,
+          statusCode: 404,
+          msg: "No order found against it bhai!! Sahab",
+        }),
+      );
+      continue;
+    }
 
-  if (isOrder.userId !== currentUser) {
-    publisherClient.lPush("response-queue", JSON.stringify({
-      identifier,
-      success: false,
-      statusCode: 403,
-      msg: "Forbidden",
-    }));
-    continue;
-  }
+    if (isOrder.userId !== currentUser) {
+      publisherClient.lPush(
+        "response-queue",
+        JSON.stringify({
+          identifier,
+          success: false,
+          statusCode: 403,
+          msg: "Forbidden",
+        }),
+      );
+      continue;
+    }
 
-  if (isOrder.status === "FILLED" || isOrder.status === "CANCELLED") {
-    publisherClient.lPush("response-queue", JSON.stringify({
-      identifier,
-      success: false,
-      statusCode: 400,
-      msg: "Order cannot be cancelled",
-    }));
-    continue;
-  }
+    if (isOrder.status === "FILLED" || isOrder.status === "CANCELLED") {
+      publisherClient.lPush(
+        "response-queue",
+        JSON.stringify({
+          identifier,
+          success: false,
+          statusCode: 400,
+          msg: "Order cannot be cancelled",
+        }),
+      );
+      continue;
+    }
 
-  const remainingQty = isOrder.qty - isOrder.filledqty;
-  const totalAmt = remainingQty * isOrder.price;
+    const remainingQty = isOrder.qty - isOrder.filledqty;
+    const totalAmt = remainingQty * isOrder.price;
 
-  if (isOrder.side === "BUY") {
-    BALANCES[currentUser].INR.available += totalAmt;
-    BALANCES[currentUser].INR.locked -= totalAmt;
+    if (isOrder.side === "BUY") {
+      BALANCES[currentUser].INR.available += totalAmt;
+      BALANCES[currentUser].INR.locked -= totalAmt;
 
-    const bidsAtPrice = ORDERBOOK[isOrder.symbol]?.bids[isOrder.price];
-    if (bidsAtPrice) {
-      ORDERBOOK[isOrder.symbol].bids[isOrder.price] =
-        bidsAtPrice.filter((o) => o.id !== orderId);
+      const bidsAtPrice = ORDERBOOK[isOrder.symbol]?.bids[isOrder.price];
+      if (bidsAtPrice) {
+        ORDERBOOK[isOrder.symbol].bids[isOrder.price] = bidsAtPrice.filter(
+          (o) => o.id !== orderId,
+        );
 
-      if (ORDERBOOK[isOrder.symbol].bids[isOrder.price].length === 0){
-        delete ORDERBOOK[isOrder.symbol].bids[isOrder.price];
+        if (ORDERBOOK[isOrder.symbol].bids[isOrder.price].length === 0) {
+          delete ORDERBOOK[isOrder.symbol].bids[isOrder.price];
+        }
+      }
+    } else {
+      BALANCES[currentUser][isOrder.symbol].available += remainingQty;
+      BALANCES[currentUser][isOrder.symbol].locked -= remainingQty;
+
+      const asksAtPrice = ORDERBOOK[isOrder.symbol]?.asks[isOrder.price];
+      if (asksAtPrice) {
+        ORDERBOOK[isOrder.symbol].asks[isOrder.price] = asksAtPrice.filter(
+          (o) => o.id !== orderId,
+        );
+
+        if (ORDERBOOK[isOrder.symbol].asks[isOrder.price].length === 0) {
+          delete ORDERBOOK[isOrder.symbol].asks[isOrder.price];
+        }
       }
     }
-  } else {
-    BALANCES[currentUser][isOrder.symbol].available += remainingQty;
-    BALANCES[currentUser][isOrder.symbol].locked -= remainingQty;
 
-    const asksAtPrice = ORDERBOOK[isOrder.symbol]?.asks[isOrder.price];
-    if (asksAtPrice) {
-      ORDERBOOK[isOrder.symbol].asks[isOrder.price] =
-        asksAtPrice.filter((o) => o.id !== orderId);
+    isOrder.status = "CANCELLED";
 
-      if (ORDERBOOK[isOrder.symbol].asks[isOrder.price].length === 0) {
-        delete ORDERBOOK[isOrder.symbol].asks[isOrder.price];
-      }
+    publisherClient.lPush(
+      "response-queue",
+      JSON.stringify({
+        identifier,
+        success: true,
+        msg: "Order Cancelled",
+      }),
+    );
+  } else if (parsed.req_type === "get orders") {
+    console.log(ORDERS);
+    const { userId, identifier } = parsed;
+    const orders = ORDERS.filter((o) => o.userId === userId);
+    publisherClient.lPush(
+      "response-queue",
+      JSON.stringify({
+        identifier,
+        success: true,
+        orders,
+      }),
+    );
+  } else if (parsed.req_type === "get-orderbook") {
+    const { symbol, identifier } = parsed;
+
+    if (!ORDERBOOK[symbol]) {
+      publisherClient.lPush(
+        "response-queue",
+        JSON.stringify({
+          identifier,
+          success: false,
+          statusCode: 404,
+          msg: "Unknown symbol",
+        }),
+      );
+      continue;
     }
-  }
 
-  isOrder.status = "CANCELLED";
+    const asks = Object.entries(ORDERBOOK[symbol].asks).map(
+      ([price, orders]) => ({
+        price: Number(price),
+        qty: orders.reduce((acc, curr) => acc + curr.qty, 0),
+      }),
+    );
 
-  publisherClient.lPush("response-queue", JSON.stringify({
-    identifier,
-    success: true,
-    msg: "Order Cancelled",
-  }));
-  }
-else if(parsed.req_type==="get orders"){
-  console.log(ORDERS);
-  const {userId , identifier} = parsed;
-  const orders = ORDERS.filter((o) => o.userId === userId);
-  publisherClient.lPush("response-queue",JSON.stringify({
-    identifier,success:true,orders
-  }))
-}
-else if (parsed.req_type === "get-orderbook") {
-  const { symbol, identifier } = parsed;
+    const bids = Object.entries(ORDERBOOK[symbol].bids).map(
+      ([price, orders]) => ({
+        price: Number(price),
+        qty: orders.reduce((acc, curr) => acc + curr.qty, 0),
+      }),
+    );
 
-  if (!ORDERBOOK[symbol]) {
-    publisherClient.lPush("response-queue", JSON.stringify({
-      identifier,
-      success: false,
-      statusCode: 404,
-      msg: "Unknown symbol",
-    }));
-    continue;
-  }
-
-  const asks = Object.entries(ORDERBOOK[symbol].asks).map(([price, orders]) => ({
-    price: Number(price),
-    qty: orders.reduce((acc, curr) => acc + curr.qty, 0),
-  }));
-
-  const bids = Object.entries(ORDERBOOK[symbol].bids).map(([price, orders]) => ({
-    price: Number(price),
-    qty: orders.reduce((acc, curr) => acc + curr.qty, 0),
-  }));
-
-  publisherClient.lPush("response-queue", JSON.stringify({
-    identifier,
-    success: true,
-    asks,
-    bids,
-  }));
+    publisherClient.lPush(
+      "response-queue",
+      JSON.stringify({
+        identifier,
+        success: true,
+        asks,
+        bids,
+      }),
+    );
   } else if (parsed.req_type === "get-fills") {
-  const { symbol, identifier } = parsed;
+    const { symbol, identifier } = parsed;
 
-  const fills = FILLS.filter((f) => f.symbol === symbol);
+    const fills = FILLS.filter((f) => f.symbol === symbol);
 
-  publisherClient.lPush("response-queue", JSON.stringify({
-    identifier,
-    success: true,
-    fills,
-  }));
-} else if (parsed.req_type === "get-stocks") {
-  const { identifier } = parsed;
+    publisherClient.lPush(
+      "response-queue",
+      JSON.stringify({
+        identifier,
+        success: true,
+        fills,
+      }),
+    );
+  } else if (parsed.req_type === "get-stocks") {
+    const { identifier } = parsed;
 
-  publisherClient.lPush("response-queue", JSON.stringify({
-    identifier,
-    success: true,
-    stocks: STOCKS,
-  }));
-}else if (parsed.req_type === "get-balance") {
-  console.log("entered the queue")
-  const { currentUser, identifier } = parsed;
+    publisherClient.lPush(
+      "response-queue",
+      JSON.stringify({
+        identifier,
+        success: true,
+        stocks: STOCKS,
+      }),
+    );
+  } else if (parsed.req_type === "get-balance") {
+    console.log("entered the queue");
+    const { currentUser, identifier } = parsed;
 
-  ensureUserBalance(currentUser);
-  const balance = BALANCES[currentUser];
+    ensureUserBalance(currentUser);
+    const balance = BALANCES[currentUser];
 
-  publisherClient.lPush("response-queue", JSON.stringify({
-    identifier,
-    success: true,
-    balance,
-  }));
+    publisherClient.lPush(
+      "response-queue",
+      JSON.stringify({
+        identifier,
+        success: true,
+        balance,
+      }),
+    );
   }
 }
-
-
