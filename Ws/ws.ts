@@ -40,7 +40,7 @@ function removeSocketFromAll(socket: WebSocket) {
 
 async function poll() {
   while (true) {
-    const data = await client.brPop("engine-outgoing", 0);
+    const data = await client.brPop("ws-queue", 0);
     if (!data) continue;
 
     const parsedData = JSON.parse(data.element);

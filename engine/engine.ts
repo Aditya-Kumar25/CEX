@@ -8,6 +8,12 @@ const publisherClient = await createClient({})
   .on("error", (err) => console.log("Redis Client Error", err))
   .connect();
 
+
+const wsClient = await createClient({})
+  .on("error", (e)=>console.log("Redis Client Error",e))
+  .connect()
+
+
 type side = "BUY" | "SELL";
 type OrderType = "LIMIT" | "MARKET";
 type status = "FILLED" | "PARTIAL" | "OPEN" | "CLOSED" | "CANCELLED";
@@ -97,7 +103,6 @@ function FilledOrders(
   status: status,
 ) {
   let remaining = qty;
-  console.log("====== MATCHING START ======");
 
   console.log({
     side,
@@ -474,6 +479,22 @@ while (1) {
       "response-queue",
       JSON.stringify({ filledQty, identifier, success: true }),
     );
+    wsClient.lPush(
+      "ws-queue",
+      JSON.stringify({
+      
+        stream:`depth.${symbol}`,
+        value:{bids:Object.entries(ORDERBOOK[symbol].bids).map(([price,orders])=>({
+            price : Number(price),
+            qty : orders.reduce((acc,curr)=>acc+curr.qty,0)
+        })),
+        asks:Object.entries(ORDERBOOK[symbol].asks).map(([price,orders])=>({
+            price : Number(price),
+            qty : orders.reduce((acc,curr)=>acc+curr.qty,0)
+        }))}
+        
+      })
+    )
   }
   
   else if (parsed.req_type === "delete-order") {
@@ -523,7 +544,7 @@ while (1) {
       ORDERBOOK[isOrder.symbol].bids[isOrder.price] =
         bidsAtPrice.filter((o) => o.id !== orderId);
 
-      if (ORDERBOOK[isOrder.symbol].bids[isOrder.price].length === 0) {
+      if (ORDERBOOK[isOrder.symbol].bids[isOrder.price].length === 0){
         delete ORDERBOOK[isOrder.symbol].bids[isOrder.price];
       }
     }
@@ -617,7 +638,7 @@ else if (parsed.req_type === "get-orderbook") {
     success: true,
     balance,
   }));
-}
+  }
 }
 
 

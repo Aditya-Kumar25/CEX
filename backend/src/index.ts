@@ -1,9 +1,6 @@
-console.log("F0")
 import express, { type Request, type Response } from "express";
-console.log("Flag")
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-console.log("flag -1")
 import authcheck from "./authmiddleware";
 import { randomUUID } from "node:crypto";
 import crypto from "node:crypto";
