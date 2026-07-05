@@ -194,8 +194,16 @@ app.get("/orderbook/:symbol", async (req, res) => {
     });
   }
 
-  res.json({ asks: returnedData.asks, bids: returnedData.bids });
+  // offset now comes from the engine (Depth_Update[symbol] at the moment
+  // this snapshot was built). Frontend needs this to know which WS
+  // messages are "already included" in this snapshot vs "arrived after."
+  res.json({
+    asks: returnedData.asks,
+    bids: returnedData.bids,
+    offset: returnedData.offset,
+  });
 });
+
 app.get("/fills/:symbol", async (req, res) => {
   const { symbol } = req.params;
   const req_type = "get-fills";
