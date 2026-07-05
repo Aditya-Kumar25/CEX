@@ -28,6 +28,9 @@ The core matching logic is implemented from scratch using an in-memory order boo
 
 ## Architecture
 
+
+<img width="745" height="379" alt="image" src="https://github.com/user-attachments/assets/1a551cb8-c444-4ed6-a0cf-2e576b4a43ea" />
+
 ```text
                          CLIENT
                             |
