@@ -78,18 +78,69 @@ const ORDERBOOK: Record<string, SymbolOrderBook> = {
   BTC: { bids: {}, asks: {} },
 };
 
+const Depth_Update: Record<string, number> = {
+  TESLA: 0,
+  SPACEX: 0,
+  BTC: 0,
+};
+
 function ensureUserBalance(userId: string) {
   if (!BALANCES[userId]) {
     BALANCES[userId] = {
-      INR: { available: 10000, locked: 0 },
+      INR: { available: 1000000, locked: 0 },
 
       BTC: {
         available: 20,
         locked: 0,
       },
+      TESLA: {
+        available: 50,
+        locked: 0,
+      },
+      SPACEX: {
+        available: 50,
+        locked: 0,
+      },
     };
   }
 }
+
+/**
+ * Pushes a single depth delta for one side of the book, at one price level.
+ *
+ * This is intentionally the ONLY place that builds the ws-queue depth
+ * message. Every mutation site below (both inside FilledOrders and outside
+ * it, when a resting remainder gets added to the book) calls this instead
+ * of hand-rolling the JSON.stringify each time. That keeps the "which side
+ * am I pushing" logic in one spot instead of duplicated 6 times.
+ *
+ * side: "bids" or "asks" - which side of the book changed.
+ * price: the price level that changed.
+ * qtyAtPrice: the new total resting qty at that price level (0 means the
+ *             level is now empty / should be treated as removed on the
+ *             client).
+ */
+function pushDepthDelta(
+  symbol: string,
+  side: "bids" | "asks",
+  price: number,
+  qtyAtPrice: number,
+) {
+  Depth_Update[symbol]++;
+
+  wsClient.lPush(
+    "ws-queue",
+    JSON.stringify({
+      stream: `depth.${symbol}`,
+      value: {
+        offset: Depth_Update[symbol],
+        bids: side === "bids" ? [[price, qtyAtPrice]] : [],
+        asks: side === "asks" ? [[price, qtyAtPrice]] : [],
+      },
+    }),
+  );
+}
+
 function FilledOrders(
   incoming: Order,
   userId: string,
@@ -118,6 +169,8 @@ function FilledOrders(
   });
 
   if (type === "LIMIT" && side === "BUY") {
+    // Incoming BUY consumes resting ASKS. Every ask price level we touch
+    // here has its qty reduced, so each iteration needs an "asks" delta.
     const asks = ORDERBOOK[symbol].asks;
     const askPrices = Object.keys(asks)
       .map(Number)
@@ -128,6 +181,11 @@ function FilledOrders(
       }
       const ordersAtPrice = asks[askPrice];
       for (const sellOrders of ordersAtPrice) {
+        // Orders that were fully filled by an earlier iteration are left
+        // in the array with qty 0 rather than spliced out (cheaper, but
+        // means later matches must skip them explicitly or they'd
+        // silently produce matchedQty = 0 fills).
+        if (sellOrders.qty === 0) continue;
         let matchedQty = 0;
         if (sellOrders.qty <= remaining) {
           matchedQty = sellOrders.qty;
@@ -140,6 +198,16 @@ function FilledOrders(
           remaining = 0;
           sellOrders.status = "PARTIAL";
         }
+
+        // ASK LEVEL JUST CHANGED (a resting sell order's qty was reduced
+        // or zeroed out). Recompute the total resting qty at this price
+        // and push that as the new depth for askPrice, on the asks side.
+        const qtyAtAskPrice = ordersAtPrice.reduce(
+          (acc, curr) => acc + curr.qty,
+          0,
+        );
+        pushDepthDelta(symbol, "asks", askPrice, qtyAtAskPrice);
+
         flipBalance(userId, sellOrders.userId, matchedQty, askPrice, symbol);
         console.log("BUY LIMIT MATCH FOUND");
 
@@ -160,7 +228,7 @@ function FilledOrders(
           qty: matchedQty,
         });
 
-         wsClient.lPush(
+        wsClient.lPush(
           "ws-queue",
           JSON.stringify({
             stream: `trade.${symbol}`,
@@ -186,6 +254,8 @@ function FilledOrders(
       }
     }
   } else if (type === "LIMIT" && side === "SELL") {
+    // Incoming SELL consumes resting BIDS. Every bid price level we touch
+    // here has its qty reduced, so each iteration needs a "bids" delta.
     const buys = ORDERBOOK[symbol].bids;
     const buyprices = Object.keys(buys)
       .map(Number)
@@ -196,6 +266,7 @@ function FilledOrders(
       }
       const ordersAtPrice = buys[buyprice];
       for (const buyorder of ordersAtPrice) {
+        if (buyorder.qty === 0) continue;
         let matchedQty = 0;
         if (buyorder.qty >= remaining) {
           matchedQty = remaining;
@@ -208,6 +279,15 @@ function FilledOrders(
           buyorder.status = "FILLED";
           buyorder.qty = 0;
         }
+
+        // BID LEVEL JUST CHANGED. Same idea as above, mirrored to the
+        // bids side, keyed on buyprice instead of askPrice.
+        const qtyAtBuyPrice = ordersAtPrice.reduce(
+          (acc, curr) => acc + curr.qty,
+          0,
+        );
+        pushDepthDelta(symbol, "bids", buyprice, qtyAtBuyPrice);
+
         console.log("SELL LIMIT MATCH FOUND");
 
         console.log({
@@ -250,6 +330,10 @@ function FilledOrders(
       }
     }
   } else if (type === "MARKET" && side === "BUY") {
+    // Same as LIMIT BUY matching-wise: consumes asks, so push asks deltas.
+    // MARKET orders never rest, so this loop is the ONLY place a depth
+    // push is needed for this branch - there's no "remainder added to
+    // book" step afterwards for MARKET orders.
     const ask = ORDERBOOK[symbol].asks;
     const askOrders = Object.keys(ask)
       .map(Number)
@@ -257,6 +341,7 @@ function FilledOrders(
     for (const askPrice of askOrders) {
       const ordersAtPrice = ask[askPrice];
       for (const askOrder of ordersAtPrice) {
+        if (askOrder.qty === 0) continue;
         let matchedQty = 0;
         if (askOrder.qty <= remaining) {
           matchedQty = askOrder.qty;
@@ -269,6 +354,14 @@ function FilledOrders(
           remaining = 0;
           askOrder.status = "PARTIAL";
         }
+
+        // ASK LEVEL JUST CHANGED.
+        const qtyAtAskPrice = ordersAtPrice.reduce(
+          (acc, curr) => acc + curr.qty,
+          0,
+        );
+        pushDepthDelta(symbol, "asks", askPrice, qtyAtAskPrice);
+
         flipBalance(userId, askOrder.userId, matchedQty, askPrice, symbol);
         console.log("MARKET BUY MATCH FOUND");
 
@@ -289,7 +382,7 @@ function FilledOrders(
           qty: matchedQty,
         });
 
-         wsClient.lPush(
+        wsClient.lPush(
           "ws-queue",
           JSON.stringify({
             stream: `trade.${symbol}`,
@@ -311,7 +404,8 @@ function FilledOrders(
       }
     }
   } else {
-    // MARKET SELL
+    // MARKET SELL - consumes bids, so push bids deltas. Same "no
+    // remainder ever rests" reasoning as MARKET BUY above.
     const buy = ORDERBOOK[symbol].bids;
     const buyOrders = Object.keys(buy)
       .map(Number)
@@ -319,6 +413,7 @@ function FilledOrders(
     for (const buyPrice of buyOrders) {
       const ordersAtPrice = buy[buyPrice];
       for (const buyorder of ordersAtPrice) {
+        if (buyorder.qty === 0) continue;
         let matchedQty = 0;
         if (buyorder.qty >= remaining) {
           matchedQty = remaining;
@@ -331,6 +426,14 @@ function FilledOrders(
           buyorder.qty = 0;
           buyorder.status = "FILLED";
         }
+
+        // BID LEVEL JUST CHANGED.
+        const qtyAtBuyPrice = ordersAtPrice.reduce(
+          (acc, curr) => acc + curr.qty,
+          0,
+        );
+        pushDepthDelta(symbol, "bids", buyPrice, qtyAtBuyPrice);
+
         console.log("MARKET SELL MATCH FOUND");
 
         console.log({
@@ -352,7 +455,7 @@ function FilledOrders(
           price: buyPrice,
         });
 
-         wsClient.lPush(
+        wsClient.lPush(
           "ws-queue",
           JSON.stringify({
             stream: `trade.${symbol}`,
@@ -508,6 +611,10 @@ while (1) {
 
     ORDERS.push(incoming);
 
+    // Only a LIMIT order can have leftover qty that rests on the book.
+    // MARKET orders either fill fully or the remainder is discarded
+    // (no MARKET resting), so no depth push is needed for MARKET here -
+    // all of that was already handled inside FilledOrders above.
     if (remainingQty > 0 && type === "LIMIT") {
       incoming.qty = remainingQty;
       if (side === "BUY") {
@@ -515,11 +622,28 @@ while (1) {
           ORDERBOOK[symbol].bids[price] = [];
         }
         ORDERBOOK[symbol].bids[price].push(incoming);
+
+        // BID LEVEL JUST CHANGED: a brand new (or larger) resting bid
+        // was added at `price`. Recompute the total qty resting at that
+        // price and push it as a bids delta.
+        const qtyAtPrice = ORDERBOOK[symbol].bids[price].reduce(
+          (acc, curr) => acc + curr.qty,
+          0,
+        );
+        pushDepthDelta(symbol, "bids", price, qtyAtPrice);
       } else {
         if (!ORDERBOOK[symbol].asks[price]) {
           ORDERBOOK[symbol].asks[price] = [];
         }
         ORDERBOOK[symbol].asks[price].push(incoming);
+
+        // ASK LEVEL JUST CHANGED: mirror of the BUY case above, but on
+        // the asks side, since a SELL remainder rests as a new ask.
+        const qtyAtPrice = ORDERBOOK[symbol].asks[price].reduce(
+          (acc, curr) => acc + curr.qty,
+          0,
+        );
+        pushDepthDelta(symbol, "asks", price, qtyAtPrice);
       }
     }
 
@@ -530,26 +654,6 @@ while (1) {
     publisherClient.lPush(
       "response-queue",
       JSON.stringify({ filledQty, identifier, success: true }),
-    );
-    wsClient.lPush(
-      "ws-queue",
-      JSON.stringify({
-        stream: `depth.${symbol}`,
-        value: {
-          bids: Object.entries(ORDERBOOK[symbol].bids).map(
-            ([price, orders]) => ({
-              price: Number(price),
-              qty: orders.reduce((acc, curr) => acc + curr.qty, 0),
-            }),
-          ),
-          asks: Object.entries(ORDERBOOK[symbol].asks).map(
-            ([price, orders]) => ({
-              price: Number(price),
-              qty: orders.reduce((acc, curr) => acc + curr.qty, 0),
-            }),
-          ),
-        },
-      }),
     );
   } else if (parsed.req_type === "delete-order") {
     const { orderId, currentUser, identifier } = parsed;
@@ -595,7 +699,13 @@ while (1) {
       continue;
     }
 
-    const remainingQty = isOrder.qty - isOrder.filledqty;
+    // isOrder.qty is NOT the original order size once it has rested at
+    // least partially - it gets overwritten to the resting remainder
+    // right where it's pushed onto the book (see `incoming.qty =
+    // remainingQty` above). So it already IS "how much is left to
+    // cancel." Subtracting filledqty again here would double-count the
+    // fill that already happened before it started resting.
+    const remainingQty = isOrder.qty;
     const totalAmt = remainingQty * isOrder.price;
 
     if (isOrder.side === "BUY") {
@@ -607,6 +717,16 @@ while (1) {
         ORDERBOOK[isOrder.symbol].bids[isOrder.price] = bidsAtPrice.filter(
           (o) => o.id !== orderId,
         );
+
+        // BID LEVEL JUST CHANGED (an order was removed from it). If the
+        // level still has resting orders, push the new total qty; if it's
+        // now empty, push 0 so the client removes the row instead of
+        // showing a stale qty from before cancellation.
+        const remainingAtPrice = ORDERBOOK[isOrder.symbol].bids[isOrder.price];
+        const qtyAtPrice = remainingAtPrice
+          ? remainingAtPrice.reduce((acc, curr) => acc + curr.qty, 0)
+          : 0;
+        pushDepthDelta(isOrder.symbol, "bids", isOrder.price, qtyAtPrice);
 
         if (ORDERBOOK[isOrder.symbol].bids[isOrder.price].length === 0) {
           delete ORDERBOOK[isOrder.symbol].bids[isOrder.price];
@@ -621,6 +741,14 @@ while (1) {
         ORDERBOOK[isOrder.symbol].asks[isOrder.price] = asksAtPrice.filter(
           (o) => o.id !== orderId,
         );
+
+        // ASK LEVEL JUST CHANGED - same reasoning as the bids branch
+        // above, mirrored to the asks side.
+        const remainingAtPrice = ORDERBOOK[isOrder.symbol].asks[isOrder.price];
+        const qtyAtPrice = remainingAtPrice
+          ? remainingAtPrice.reduce((acc, curr) => acc + curr.qty, 0)
+          : 0;
+        pushDepthDelta(isOrder.symbol, "asks", isOrder.price, qtyAtPrice);
 
         if (ORDERBOOK[isOrder.symbol].asks[isOrder.price].length === 0) {
           delete ORDERBOOK[isOrder.symbol].asks[isOrder.price];
@@ -680,6 +808,11 @@ while (1) {
       }),
     );
 
+    // The frontend needs to know which offset this snapshot corresponds
+    // to, so it can discard any WS depth messages with offset <= this
+    // value and only apply ones that arrived after the snapshot was
+    // taken. Without this the client has no way to line up the REST
+    // snapshot with the WS delta stream.
     publisherClient.lPush(
       "response-queue",
       JSON.stringify({
@@ -687,6 +820,7 @@ while (1) {
         success: true,
         asks,
         bids,
+        offset: Depth_Update[symbol],
       }),
     );
   } else if (parsed.req_type === "get-fills") {
