@@ -9,25 +9,24 @@ const client = createClient().on("error", (err) =>
 
 await client.connect();
 
-const activeSubscriptions: Record<string, WebSocket[]> = {};
+const activeSubscriptions: Record<string, Set<WebSocket>> = {};
 
 function subscribe(stream: string, socket: WebSocket) {
   if (!activeSubscriptions[stream]) {
-    activeSubscriptions[stream] = [];
+    activeSubscriptions[stream] = new Set<WebSocket>();
   }
-  if (!activeSubscriptions[stream].includes(socket)) {
-    activeSubscriptions[stream].push(socket);
-  }
+
+  activeSubscriptions[stream].add(socket);
 }
 
 function unsubscribe(stream: string, socket: WebSocket) {
-  if (!activeSubscriptions[stream]) return;
+  const subscribers = activeSubscriptions[stream];
 
-  activeSubscriptions[stream] = activeSubscriptions[stream].filter(
-    (ws) => ws !== socket,
-  );
+  if (!subscribers) return;
 
-  if (activeSubscriptions[stream].length === 0) {
+  subscribers.delete(socket);
+
+  if (subscribers.size === 0) {
     delete activeSubscriptions[stream];
   }
 }
@@ -40,57 +39,123 @@ function removeSocketFromAll(socket: WebSocket) {
 
 async function poll() {
   while (true) {
-    const data = await client.brPop("ws-queue", 0);
-    if (!data) continue;
+    try {
+      const data = await client.brPop("ws-queue", 0);
 
-    const parsedData = JSON.parse(data.element);
-    const subscribers = activeSubscriptions[parsedData.stream];
-    if (!subscribers?.length) continue;
+      if (!data) continue;
 
-    const payload =
-      typeof parsedData.value === "string"
-        ? parsedData.value
-        : JSON.stringify(parsedData.value);
+      let parsedData: {
+        stream?: string;
+        value?: unknown;
+      };
 
-    for (const ws of subscribers) {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(payload);
+      try {
+        parsedData = JSON.parse(data.element);
+      } catch (err) {
+        console.log(
+          "Bad ws-queue payload, skipping:",
+          data.element,
+          err,
+        );
+
+        continue;
       }
+
+      if (!parsedData.stream) continue;
+
+      const subscribers =
+        activeSubscriptions[parsedData.stream];
+
+      if (!subscribers || subscribers.size === 0) {
+        continue;
+      }
+
+      const payload = JSON.stringify({
+        stream: parsedData.stream,
+        value: parsedData.value,
+      });
+
+      for (const socket of subscribers) {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(payload);
+        }
+      }
+    } catch (err) {
+      console.log("WS queue polling error:", err);
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, 1000),
+      );
     }
   }
 }
 
 poll();
 
-const wss = new WebSocketServer({ port: PORT });
+const wss = new WebSocketServer({
+  port: PORT,
+});
+
 console.log(`WS server listening on ws://localhost:${PORT}`);
 
 wss.on("connection", (socket) => {
+  console.log("WS CLIENT CONNECTED");
+
   socket.on("message", (data) => {
-    let parsedData: { method?: string; params?: string[]; id?: number };
+    let parsedData: {
+      method?: string;
+      params?: string[];
+      id?: number;
+    };
+
     try {
       parsedData = JSON.parse(data.toString());
     } catch {
       return;
     }
 
-    // {"method":"SUBSCRIBE","params":["trade.BTC","depth.BTC","ticker.BTC"],"id":1}
-    if (parsedData.method === "SUBSCRIBE" && parsedData.params) {
-      for (const param of parsedData.params) {
-        subscribe(param, socket);
+    if (
+      parsedData.method === "SUBSCRIBE" &&
+      parsedData.params
+    ) {
+      for (const stream of parsedData.params) {
+        subscribe(stream, socket);
       }
-      socket.send(JSON.stringify({ result: null, id: parsedData.id }));
+
+      socket.send(
+        JSON.stringify({
+          result: null,
+          id: parsedData.id,
+        }),
+      );
     }
 
-    if (parsedData.method === "UNSUBSCRIBE" && parsedData.params) {
-      for (const param of parsedData.params) {
-        unsubscribe(param, socket);
+    if (
+      parsedData.method === "UNSUBSCRIBE" &&
+      parsedData.params
+    ) {
+      for (const stream of parsedData.params) {
+        unsubscribe(stream, socket);
       }
-      socket.send(JSON.stringify({ result: null, id: parsedData.id }));
+
+      socket.send(
+        JSON.stringify({
+          result: null,
+          id: parsedData.id,
+        }),
+      );
     }
   });
 
   socket.on("close", () => {
+    console.log("WS CLIENT DISCONNECTED");
+
+    removeSocketFromAll(socket);
+  });
+
+  socket.on("error", (err) => {
+    console.log("WS SOCKET ERROR:", err);
+
     removeSocketFromAll(socket);
   });
 });
