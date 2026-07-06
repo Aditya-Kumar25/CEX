@@ -15,6 +15,8 @@ const streamListeners: Record<string, Set<Listener>> = {};
 let ws: WebSocket | null = null;
 let requestId = 1;
 
+const WS_URL = "ws://localhost:8080";
+
 function sendSubscribe(stream: string) {
   if (!ws || ws.readyState !== WebSocket.OPEN) {
     return;
@@ -51,7 +53,7 @@ export function connectWebSocket() {
     return;
   }
 
-  ws = new WebSocket("ws://localhost:8080");
+  ws = new WebSocket(WS_URL);
 
   ws.onopen = () => {
     console.log("WebSocket connected");

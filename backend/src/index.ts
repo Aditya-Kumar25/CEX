@@ -9,6 +9,8 @@ import { untilWeGotBack } from "./untilwegotback";
 console.log("INDEX DB URL =", process.env.DATABASE_URL);
 import {prisma} from "../globalprisma"
 import { Client } from "pg";
+import cors from "cors";
+
 console.log("INDEX DB URL 1=", process.env.DATABASE_URL);
 
 const client   = await createClient({})
@@ -19,6 +21,13 @@ const app = express();
 
 app.use(express.json());
 
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 app.post("/signup", async (req: Request, res: Response) => {
   const { email,username, password } = req.body;
