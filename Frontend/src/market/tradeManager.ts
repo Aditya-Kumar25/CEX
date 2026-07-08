@@ -1,7 +1,9 @@
 import {
   subscribe,
   unsubscribe,
-} from "../Services/Websocket";
+} from "../Services/Websocket"
+
+import { getFills } from "../Services/api";
 
 import type {
   Trade,
@@ -13,6 +15,14 @@ class TradeManager {
   private symbol: string;
 
   private trades: Trade[] = [];
+
+  private buffer: Trade[] = [];
+
+  private loading = true;
+
+  private buffering = true;
+
+  private error: string | null = null;
 
   private listeners = new Set<StateListener>();
 
@@ -26,19 +36,84 @@ class TradeManager {
     const trade = value as Trade;
 
     if (
+      typeof trade.symbol !== "string" ||
       typeof trade.price !== "number" ||
       typeof trade.qty !== "number"
     ) {
       return;
     }
 
+    if (this.buffering) {
+      this.buffer.push(trade);
+
+      return;
+    }
+
+    this.addTrade(trade);
+
+    this.emit();
+  };
+
+  private addTrade(trade: Trade) {
     this.trades = [
       trade,
       ...this.trades,
     ].slice(0, 100);
+  }
 
-    this.emit();
-  };
+  private async loadTrades() {
+    try {
+      this.loading = true;
+
+      this.error = null;
+
+      const fills = await getFills(this.symbol);
+
+      this.trades = fills
+        .map((fill) => ({
+          id: fill.id,
+
+          symbol: fill.symbol,
+
+          price: fill.price,
+
+          qty: fill.qty,
+        }))
+        .slice(-100)
+        .reverse();
+
+      for (const trade of this.buffer) {
+        this.addTrade(trade);
+      }
+
+      this.buffer = [];
+
+      this.buffering = false;
+
+      this.loading = false;
+
+      this.emit();
+    } catch (error) {
+      console.log(
+        "Trade history error:",
+        error,
+      );
+
+      this.loading = false;
+
+      this.error = "Failed to load trade history";
+
+      this.buffering = false;
+
+      for (const trade of this.buffer) {
+        this.addTrade(trade);
+      }
+
+      this.buffer = [];
+
+      this.emit();
+    }
+  }
 
   public start() {
     if (this.started) {
@@ -47,10 +122,14 @@ class TradeManager {
 
     this.started = true;
 
+    this.buffering = true;
+
     subscribe(
       `trade.${this.symbol}`,
       this.handleTrade,
     );
+
+    this.loadTrades();
   }
 
   public stop() {
@@ -80,8 +159,14 @@ class TradeManager {
     }
   }
 
-  public getTrades() {
-    return this.trades;
+  public getState() {
+    return {
+      trades: this.trades,
+
+      loading: this.loading,
+
+      error: this.error,
+    };
   }
 }
 
@@ -92,6 +177,8 @@ const tradeManagers = new Map<
 
 export function getTradeManager(symbol: string) {
   if (!tradeManagers.has(symbol)) {
+    tradeManagerCleanup(symbol);
+
     tradeManagers.set(
       symbol,
       new TradeManager(symbol),
@@ -99,4 +186,18 @@ export function getTradeManager(symbol: string) {
   }
 
   return tradeManagers.get(symbol)!;
+}
+
+function tradeManagerCleanup(symbol: string) {
+  if (tradeManagers.size < 10) {
+    return;
+  }
+
+  for (const key of tradeManagers.keys()) {
+    if (key !== symbol) {
+      tradeManagers.delete(key);
+
+      break;
+    }
+  }
 }

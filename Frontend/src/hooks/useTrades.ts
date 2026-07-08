@@ -11,18 +11,33 @@ import type {
   Trade,
 } from "../types/market";
 
+type TradeState = {
+  trades: Trade[];
+
+  loading: boolean;
+
+  error: string | null;
+};
+
 export function useTrades(
   symbol: string,
-): Trade[] {
+): TradeState {
   const manager = getTradeManager(symbol);
 
-  const [trades, setTrades] = useState<Trade[]>(
-    manager.getTrades(),
-  );
+  const [state, setState] =
+    useState<TradeState>(
+      manager.getState(),
+    );
 
   useEffect(() => {
     const updateTrades = () => {
-      setTrades([...manager.getTrades()]);
+      setState({
+        ...manager.getState(),
+
+        trades: [
+          ...manager.getState().trades,
+        ],
+      });
     };
 
     const unsubscribeState =
@@ -39,5 +54,5 @@ export function useTrades(
     };
   }, [manager]);
 
-  return trades;
+  return state;
 }

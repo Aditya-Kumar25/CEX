@@ -25,7 +25,11 @@ export default function Dashboard() {
     error,
   } = useOrderBook(symbol);
 
-  const trades = useTrades(symbol);
+  const {
+    trades,
+    loading: tradesLoading,
+    error: tradesError,
+  } = useTrades(symbol);
 
   function refreshUserData() {
     setRefreshKey((value) => value + 1);
@@ -111,12 +115,25 @@ export default function Dashboard() {
       <div>
         <h2>Recent Trades</h2>
 
-        {trades.map((trade, index) => (
-          <div key={index}>
-            {trade.qty} {symbol} @{" "}
-            {trade.price}
-          </div>
-        ))}
+        {tradesLoading && (
+          <p>Loading trade history...</p>
+        )}
+
+        {tradesError && (
+          <p>{tradesError}</p>
+        )}
+
+        {!tradesLoading &&
+          trades.map((trade, index) => (
+            <div
+              key={
+                trade.id ??
+                `${trade.price}-${trade.qty}-${index}`
+              }
+            >
+              {trade.qty} {symbol} @ {trade.price}
+            </div>
+          ))}
       </div>
 
       <hr />
