@@ -1,68 +1,127 @@
-import {
-  useState,
-  type FormEvent,
-} from "react";
+import { useState } from "react";
 
-import { useAuth } from "../Context/Authcontext";
+import OrderForm from "../Components/OrderForm";
+import Balance from "../Components/Balance";
+import UserOrders from "../Components/UseOrders";
 
-function Login() {
-  const { login } = useAuth();
+import { useOrderBook } from "../hooks/useOrderBook";
+import { useTrades } from "../hooks/useTrades";
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] =
-    useState("");
+export default function Dashboard() {
+  const [symbol, setSymbol] =
+    useState("BTC");
 
-  const [error, setError] = useState<
-    string | null
-  >(null);
+  const [refreshKey, setRefreshKey] =
+    useState(0);
 
-  async function handleSubmit(
-    e: FormEvent<HTMLFormElement>,
-  ) {
-    e.preventDefault();
+  const {
+    bids,
+    asks,
+    offset,
+    loading,
+    synced,
+    error,
+  } = useOrderBook(symbol);
 
-    try {
-      setError(null);
+  const trades = useTrades(symbol);
 
-      await login({
-        email,
-        password,
-      });
-
-      console.log("LOGIN SUCCESS");
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      }
-    }
+  function refreshUserData() {
+    setRefreshKey((value) => value + 1);
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input
-        value={email}
-        onChange={(e) =>
-          setEmail(e.target.value)
-        }
-        placeholder="Email"
-      />
+    <div>
+      <h1>CEX</h1>
 
-      <input
-        type="password"
-        value={password}
-        onChange={(e) =>
-          setPassword(e.target.value)
-        }
-        placeholder="Password"
-      />
+      <div>
+        <button
+          onClick={() => setSymbol("BTC")}
+        >
+          BTC
+        </button>
 
-      <button type="submit">
-        Login
-      </button>
+        <button
+          onClick={() => setSymbol("TESLA")}
+        >
+          TESLA
+        </button>
+
+        <button
+          onClick={() => setSymbol("SPACEX")}
+        >
+          SPACEX
+        </button>
+      </div>
+
+      <h2>{symbol} Market</h2>
+
+      <p>Depth Offset: {offset}</p>
+
+      <p>
+        Market Data:{" "}
+        {synced ? "SYNCED" : "SYNCING"}
+      </p>
 
       {error && <p>{error}</p>}
-    </form>
+
+      <hr />
+
+      <div>
+        <h2>Order Book</h2>
+
+        {loading ? (
+          <p>Synchronizing orderbook...</p>
+        ) : (
+          <>
+            <h3>ASKS</h3>
+
+            {asks.map(([price, qty]) => (
+              <div key={price}>
+                {price} | {qty}
+              </div>
+            ))}
+
+            <h3>BIDS</h3>
+
+            {bids.map(([price, qty]) => (
+              <div key={price}>
+                {price} | {qty}
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+
+      <hr />
+
+      <div>
+        <h2>Recent Trades</h2>
+
+        {trades.map((trade, index) => (
+          <div key={index}>
+            {trade.qty} {symbol} @{" "}
+            {trade.price}
+          </div>
+        ))}
+      </div>
+
+      <hr />
+
+      <OrderForm
+        symbol={symbol}
+        onOrderPlaced={refreshUserData}
+      />
+
+      <hr />
+
+      <Balance refreshKey={refreshKey} />
+
+      <hr />
+
+      <UserOrders
+        refreshKey={refreshKey}
+        onOrderChanged={refreshUserData}
+      />
+    </div>
   );
 }
-
-export default Login;
