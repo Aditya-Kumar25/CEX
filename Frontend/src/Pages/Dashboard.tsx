@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../Context/AuthContext"
 import OrderForm from "../Components/OrderForm";
 import Balance from "../Components/Balance";
 import UserOrders from "../Components/UseOrders";
@@ -29,10 +31,22 @@ export default function Dashboard() {
     setRefreshKey((value) => value + 1);
   }
 
+  const { logout } = useAuth();
+
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logout();
+
+    navigate("/login");
+  }
   return (
     <div>
       <h1>CEX</h1>
 
+      <button onClick={handleLogout}>
+        Logout
+      </button>
       <div>
         <button
           onClick={() => setSymbol("BTC")}
