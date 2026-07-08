@@ -219,22 +219,25 @@ function FilledOrders(
           status,
           remainingBeforeTrade: remaining,
         });
-        FILLS.push({
+       
+        const fill = {
           id: crypto.randomUUID(),
           buyOrderId: incoming.id,
           sellOrderId: sellOrders.id,
           symbol,
           price: askPrice,
           qty: matchedQty,
-        });
+        }
 
+        FILLS.push(fill);
         wsClient.lPush(
           "ws-queue",
           JSON.stringify({
             stream: `trade.${symbol}`,
             value: {
-              symbol,
-              price: askPrice,
+              id:fill.id,
+              symbol:fill.symbol,
+              price: fill.price,
               qty: matchedQty,
             },
           }),
@@ -300,23 +303,26 @@ function FilledOrders(
         });
         flipBalance(buyorder.userId, userId, matchedQty, buyprice, symbol);
 
-        FILLS.push({
-          id: crypto.randomUUID(),
+       
+        const fill = {
+          id:crypto.randomUUID(),
           buyOrderId: buyorder.id,
           sellOrderId: incoming.id,
           symbol,
-          qty: matchedQty,
-          price: buyprice,
-        });
+          price:buyprice,
+          qty:matchedQty
+        }
+        FILLS.push(fill);
 
         wsClient.lPush(
           "ws-queue",
           JSON.stringify({
             stream: `trade.${symbol}`,
             value: {
-              symbol,
-              price: buyprice,
-              qty: matchedQty,
+              id:fill.id,
+              symbol:fill.symbol,
+              price: fill.price,
+              qty: fill.qty,
             },
           }),
         );
@@ -373,23 +379,27 @@ function FilledOrders(
           remainingBeforeTrade: remaining,
         });
 
-        FILLS.push({
+        
+        const fill = {
           id: crypto.randomUUID(),
           buyOrderId: incoming.id,
           sellOrderId: askOrder.id,
           symbol,
           price: askPrice,
           qty: matchedQty,
-        });
+        }
+
+        FILLS.push(fill);
 
         wsClient.lPush(
           "ws-queue",
           JSON.stringify({
             stream: `trade.${symbol}`,
             value: {
+              id:fill.id,
               symbol,
-              price: askPrice,
-              qty: matchedQty,
+              price: fill.price,
+              qty: fill.qty,
             },
           }),
         );
@@ -446,23 +456,27 @@ function FilledOrders(
         });
         flipBalance(buyorder.userId, userId, matchedQty, buyPrice, symbol);
 
-        FILLS.push({
+        
+        const fill = {
           id: crypto.randomUUID(),
           buyOrderId: buyorder.id,
           sellOrderId: incoming.id,
           symbol,
           qty: matchedQty,
           price: buyPrice,
-        });
+        }
+
+        FILLS.push(fill);
 
         wsClient.lPush(
           "ws-queue",
           JSON.stringify({
             stream: `trade.${symbol}`,
             value: {
+              id:fill.id,
               symbol,
-              price: buyPrice,
-              qty: matchedQty,
+              price: fill.price,
+              qty: fill.qty,
             },
           }),
         );
