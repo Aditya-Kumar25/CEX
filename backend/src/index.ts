@@ -38,7 +38,7 @@ app.post("/signup", async (req: Request, res: Response) => {
     }
   });
   if (exists) {
-    return res.json({
+    return res.status(409).json({
       msg: "username already taken",
     });
   }
@@ -62,15 +62,15 @@ app.post("/signup", async (req: Request, res: Response) => {
 });
 
 app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
   const exists =await prisma.user.findUnique({
     where:{
-      username
+      email
     }
   })
   if (!exists) {
-    return res.json({
+    return res.status(401).json({
       msg: "wrong creds",
     });
   }
@@ -134,7 +134,7 @@ app.post("/order",authcheck, async (req, res) => {
           msg:"Insufficient availability of amount/qty or no stock avl for this symbol"
         })
     }
-    res.json({msg:"Order Placed",filledQty:returnedData})
+    res.json({msg:"Order Placed",filledQty:returnedData.filledQty })
 
 })
 

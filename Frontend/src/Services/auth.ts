@@ -6,7 +6,7 @@ type LoginInput = {
 };
 
 type SignupInput = {
-  name: string;
+  username: string;
   email: string;
   password: string;
 };

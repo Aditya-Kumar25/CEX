@@ -1,7 +1,15 @@
 import { apiRequest } from "./http";
 
 export type OrderSide = "BUY" | "SELL";
+
 export type OrderType = "LIMIT" | "MARKET";
+
+export type OrderStatus =
+  | "FILLED"
+  | "PARTIAL"
+  | "OPEN"
+  | "CLOSED"
+  | "CANCELLED";
 
 export type PlaceOrderInput = {
   type: OrderType;
@@ -11,23 +19,32 @@ export type PlaceOrderInput = {
   side: OrderSide;
 };
 
-export type BalanceItem = {
+export type AssetBalance = {
   available: number;
   locked: number;
 };
 
-export type Balance = Record<string, BalanceItem>;
+export type UserBalance = {
+  INR: AssetBalance;
+  [asset: string]: AssetBalance;
+};
 
 export type UserOrder = {
   id: string;
   userId: string;
   symbol: string;
   side: OrderSide;
-  type: OrderType;
-  qty: number;
-  status: "OPEN" | "PARTIAL" | "FILLED" | "CANCELLED";
   price: number;
+  qty: number;
+  type: OrderType;
+  status: OrderStatus;
   filledqty: number;
+};
+
+export type Stock = {
+  id: number;
+  title: string;
+  symbol: string;
 };
 
 export async function placeOrder(
@@ -44,18 +61,24 @@ export async function placeOrder(
 
 export async function getBalance() {
   return apiRequest<{
-    balance: Balance;
-  }>("/balance");
+    balance: UserBalance;
+  }>("/balances");
 }
 
 export async function getOrders() {
   return apiRequest<UserOrder[]>("/getorder");
 }
 
-export async function cancelOrder(orderId: string) {
+export async function cancelOrder(
+  orderId: string,
+) {
   return apiRequest<{
     msg: string;
   }>(`/order/${orderId}`, {
     method: "DELETE",
   });
+}
+
+export async function getStocks() {
+  return apiRequest<Stock[]>("/stocks");
 }

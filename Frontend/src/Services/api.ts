@@ -32,13 +32,5 @@ export async function getFills(
 
   const data = await response.json();
 
-  if (Array.isArray(data)) {
-    return data;
-  }
-
-  if (Array.isArray(data.fills)) {
-    return data.fills;
-  }
-
-  return [];
+  return data.fills;
 }

@@ -18,7 +18,7 @@ export default function Register() {
 
   const navigate = useNavigate();
 
-  const [name, setName] = useState("");
+  const [username, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] =
     useState("");
@@ -44,7 +44,7 @@ export default function Register() {
       setError(null);
 
       await signupUser({
-        name,
+        username,
         email,
         password,
       });
@@ -64,7 +64,7 @@ export default function Register() {
       <h1>Create Account</h1>
 
       <input
-        value={name}
+        value={username}
         onChange={(event) =>
           setName(event.target.value)
         }
