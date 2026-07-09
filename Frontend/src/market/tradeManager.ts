@@ -1,13 +1,8 @@
-import {
-  subscribe,
-  unsubscribe,
-} from "../Services/Websocket"
+import { subscribe, unsubscribe } from "../Services/Websocket";
 
 import { getFills } from "../Services/api";
 
-import type {
-  Trade,
-} from "../types/market";
+import type { Trade } from "../types/market";
 
 type StateListener = () => void;
 
@@ -15,6 +10,8 @@ class TradeManager {
   private symbol: string;
 
   private trades: Trade[] = [];
+
+  private tradeIds = new Set<string>();
 
   private buffer: Trade[] = [];
 
@@ -55,10 +52,27 @@ class TradeManager {
   };
 
   private addTrade(trade: Trade) {
-    this.trades = [
-      trade,
-      ...this.trades,
-    ].slice(0, 100);
+    if (trade.id && this.tradeIds.has(trade.id)) {
+      return;
+    }
+
+    if (trade.id) {
+      this.tradeIds.add(trade.id);
+    }
+
+    this.trades = [trade, ...this.trades].slice(0, 100);
+
+    this.rebuildTradeIds();
+  }
+
+  private rebuildTradeIds() {
+    this.tradeIds.clear();
+
+    for (const trade of this.trades) {
+      if (trade.id) {
+        this.tradeIds.add(trade.id);
+      }
+    }
   }
 
   private async loadTrades() {
@@ -69,8 +83,13 @@ class TradeManager {
 
       const fills = await getFills(this.symbol);
 
-      this.trades = fills
-        .map((fill) => ({
+      this.trades = [];
+      this.tradeIds.clear();
+
+      const recentFills = fills.slice(-100).reverse();
+
+      for (const fill of recentFills) {
+        const trade: Trade = {
           id: fill.id,
 
           symbol: fill.symbol,
@@ -78,9 +97,14 @@ class TradeManager {
           price: fill.price,
 
           qty: fill.qty,
-        }))
-        .slice(-100)
-        .reverse();
+        };
+
+        if (trade.id) {
+          this.tradeIds.add(trade.id);
+        }
+
+        this.trades.push(trade);
+      }
 
       for (const trade of this.buffer) {
         this.addTrade(trade);
@@ -94,10 +118,7 @@ class TradeManager {
 
       this.emit();
     } catch (error) {
-      console.log(
-        "Trade history error:",
-        error,
-      );
+      console.log("Trade history error:", error);
 
       this.loading = false;
 
@@ -124,10 +145,7 @@ class TradeManager {
 
     this.buffering = true;
 
-    subscribe(
-      `trade.${this.symbol}`,
-      this.handleTrade,
-    );
+    subscribe(`trade.${this.symbol}`, this.handleTrade);
 
     this.loadTrades();
   }
@@ -137,10 +155,7 @@ class TradeManager {
       return;
     }
 
-    unsubscribe(
-      `trade.${this.symbol}`,
-      this.handleTrade,
-    );
+    unsubscribe(`trade.${this.symbol}`, this.handleTrade);
 
     this.started = false;
   }
@@ -170,34 +185,28 @@ class TradeManager {
   }
 }
 
-const tradeManagers = new Map<
-  string,
-  TradeManager
->();
+const tradeManagers = new Map<string, TradeManager>();
 
 export function getTradeManager(symbol: string) {
   if (!tradeManagers.has(symbol)) {
-    tradeManagerCleanup(symbol);
+    // tradeManagerCleanup(symbol);
 
-    tradeManagers.set(
-      symbol,
-      new TradeManager(symbol),
-    );
+    tradeManagers.set(symbol, new TradeManager(symbol));
   }
 
   return tradeManagers.get(symbol)!;
 }
 
-function tradeManagerCleanup(symbol: string) {
-  if (tradeManagers.size < 10) {
-    return;
-  }
+// function tradeManagerCleanup(symbol: string) {
+//   if (tradeManagers.size < 10) {
+//     return;
+//   }
 
-  for (const key of tradeManagers.keys()) {
-    if (key !== symbol) {
-      tradeManagers.delete(key);
+//   for (const key of tradeManagers.keys()) {
+//     if (key !== symbol) {
+//       tradeManagers.delete(key);
 
-      break;
-    }
-  }
-}
+//       break;
+//     }
+//   }
+// }
