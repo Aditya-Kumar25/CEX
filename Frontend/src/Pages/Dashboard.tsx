@@ -1,21 +1,68 @@
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useState } from "react";
 
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../Context/AuthContext"
 import OrderForm from "../Components/OrderForm";
 import Balance from "../Components/Balance";
 import UserOrders from "../Components/UseOrders";
+import MarketSelector from "../Components/MarketSelector";
 
 import { useOrderBook } from "../hooks/useOrderBook";
 import { useTrades } from "../hooks/useTrades";
+import { useAuth } from "../Context/AuthContext";
+
+import {
+  isSupportedSymbol,
+  type MarketSymbol,
+} from "../types/symbol";
 
 export default function Dashboard() {
-  const [symbol, setSymbol] =
-    useState("BTC");
+  const { symbol: routeSymbol } = useParams();
+
+  const navigate = useNavigate();
+
+  const { logout } = useAuth();
 
   const [refreshKey, setRefreshKey] =
     useState(0);
 
+  const symbol = routeSymbol?.toUpperCase();
+
+  if (!symbol || !isSupportedSymbol(symbol)) {
+    return <Navigate to="/trade/BTC" replace />;
+  }
+
+  return (
+    <TradingDashboard
+      symbol={symbol}
+      refreshKey={refreshKey}
+      onRefresh={() =>
+        setRefreshKey((value) => value + 1)
+      }
+      onLogout={() => {
+        logout();
+
+        navigate("/login");
+      }}
+    />
+  );
+}
+
+type TradingDashboardProps = {
+  symbol: MarketSymbol;
+
+  refreshKey: number;
+
+  onRefresh: () => void;
+
+  onLogout: () => void;
+};
+
+function TradingDashboard({
+  symbol,
+  refreshKey,
+  onRefresh,
+  onLogout,
+}: TradingDashboardProps) {
   const {
     bids,
     asks,
@@ -31,45 +78,19 @@ export default function Dashboard() {
     error: tradesError,
   } = useTrades(symbol);
 
-  function refreshUserData() {
-    setRefreshKey((value) => value + 1);
-  }
-
-  const { logout } = useAuth();
-
-  const navigate = useNavigate();
-
-  function handleLogout() {
-    logout();
-
-    navigate("/login");
-  }
   return (
     <div>
-      <h1>CEX</h1>
+      <header>
+        <h1>CEX</h1>
 
-      <button onClick={handleLogout}>
-        Logout
-      </button>
-      <div>
-        <button
-          onClick={() => setSymbol("BTC")}
-        >
-          BTC
+        <button onClick={onLogout}>
+          Logout
         </button>
+      </header>
 
-        <button
-          onClick={() => setSymbol("TESLA")}
-        >
-          TESLA
-        </button>
-
-        <button
-          onClick={() => setSymbol("SPACEX")}
-        >
-          SPACEX
-        </button>
-      </div>
+      <MarketSelector
+        activeSymbol={symbol}
+      />
 
       <h2>{symbol} Market</h2>
 
@@ -84,11 +105,13 @@ export default function Dashboard() {
 
       <hr />
 
-      <div>
+      <section>
         <h2>Order Book</h2>
 
         {loading ? (
-          <p>Synchronizing orderbook...</p>
+          <p>
+            Synchronizing orderbook...
+          </p>
         ) : (
           <>
             <h3>ASKS</h3>
@@ -108,15 +131,17 @@ export default function Dashboard() {
             ))}
           </>
         )}
-      </div>
+      </section>
 
       <hr />
 
-      <div>
+      <section>
         <h2>Recent Trades</h2>
 
         {tradesLoading && (
-          <p>Loading trade history...</p>
+          <p>
+            Loading trade history...
+          </p>
         )}
 
         {tradesError && (
@@ -131,16 +156,17 @@ export default function Dashboard() {
                 `${trade.price}-${trade.qty}-${index}`
               }
             >
-              {trade.qty} {symbol} @ {trade.price}
+              {trade.qty} {symbol} @{" "}
+              {trade.price}
             </div>
           ))}
-      </div>
+      </section>
 
       <hr />
 
       <OrderForm
         symbol={symbol}
-        onOrderPlaced={refreshUserData}
+        onOrderPlaced={onRefresh}
       />
 
       <hr />
@@ -151,7 +177,7 @@ export default function Dashboard() {
 
       <UserOrders
         refreshKey={refreshKey}
-        onOrderChanged={refreshUserData}
+        onOrderChanged={onRefresh}
       />
     </div>
   );
