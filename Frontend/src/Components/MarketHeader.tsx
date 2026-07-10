@@ -1,9 +1,7 @@
-import type {
-  MarketSymbol,
-} from "../types/symbol";
+
 
 type MarketHeaderProps = {
-  symbol: MarketSymbol;
+  symbol: string;
 
   onLogout: () => void;
 };

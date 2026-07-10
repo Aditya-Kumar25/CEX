@@ -21,15 +21,14 @@ import {
 import {
   useTrades,
 } from "../hooks/useTrades";
+  
+import {
+  useStocks,
+} from "../hooks/useStocks";
 
 import {
   useAuth,
 } from "../Context/AuthContext";
-
-import {
-  isSupportedSymbol,
-  type MarketSymbol,
-} from "../types/symbol";
 
 export default function Dashboard() {
   const {
@@ -40,19 +39,41 @@ export default function Dashboard() {
 
   const { logout } = useAuth();
 
+  const {
+    stocks,
+    loading: stocksLoading,
+    error: stocksError,
+  } = useStocks();
+
   const [refreshKey, setRefreshKey] =
     useState(0);
 
   const symbol =
     routeSymbol?.toUpperCase();
 
-  if (
-    !symbol ||
-    !isSupportedSymbol(symbol)
-  ) {
+  if (stocksLoading) {
+    return <p>Loading exchange...</p>;
+  }
+
+  if (stocksError) {
+    return <p>{stocksError}</p>;
+  }
+
+  const marketExists = stocks.some(
+    (stock) => stock.symbol === symbol,
+  );
+
+  if (!symbol || !marketExists) {
+    const defaultSymbol =
+      stocks[0]?.symbol;
+
+    if (!defaultSymbol) {
+      return <p>No markets available.</p>;
+    }
+
     return (
       <Navigate
-        to="/trade/BTC"
+        to={`/trade/${defaultSymbol}`}
         replace
       />
     );
@@ -73,6 +94,7 @@ export default function Dashboard() {
   return (
     <TradingDashboard
       symbol={symbol}
+      stocks={stocks}
       refreshKey={refreshKey}
       onRefresh={refreshUserData}
       onLogout={handleLogout}
@@ -81,7 +103,13 @@ export default function Dashboard() {
 }
 
 type TradingDashboardProps = {
-  symbol: MarketSymbol;
+  symbol: string;
+
+  stocks: {
+    id: number;
+    title: string;
+    symbol: string;
+  }[];
 
   refreshKey: number;
 
@@ -92,6 +120,7 @@ type TradingDashboardProps = {
 
 function TradingDashboard({
   symbol,
+  stocks,
   refreshKey,
   onRefresh,
   onLogout,
@@ -119,7 +148,10 @@ function TradingDashboard({
       />
 
       <MarketSelector
+        stocks={stocks}
         activeSymbol={symbol}
+        loading={false}
+        error={null}
       />
 
       <div>

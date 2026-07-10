@@ -185,6 +185,9 @@ function FilledOrders(
         // in the array with qty 0 rather than spliced out (cheaper, but
         // means later matches must skip them explicitly or they'd
         // silently produce matchedQty = 0 fills).
+        if (sellOrders.userId === userId) {
+          continue;
+        }
         if (sellOrders.qty === 0) continue;
         let matchedQty = 0;
         if (sellOrders.qty <= remaining) {
@@ -219,7 +222,7 @@ function FilledOrders(
           status,
           remainingBeforeTrade: remaining,
         });
-       
+
         const fill = {
           id: crypto.randomUUID(),
           buyOrderId: incoming.id,
@@ -227,7 +230,7 @@ function FilledOrders(
           symbol,
           price: askPrice,
           qty: matchedQty,
-        }
+        };
 
         FILLS.push(fill);
         wsClient.lPush(
@@ -235,8 +238,8 @@ function FilledOrders(
           JSON.stringify({
             stream: `trade.${symbol}`,
             value: {
-              id:fill.id,
-              symbol:fill.symbol,
+              id: fill.id,
+              symbol: fill.symbol,
               price: fill.price,
               qty: matchedQty,
             },
@@ -269,6 +272,9 @@ function FilledOrders(
       }
       const ordersAtPrice = buys[buyprice];
       for (const buyorder of ordersAtPrice) {
+        if (buyorder.userId === userId) {
+          continue;
+        }
         if (buyorder.qty === 0) continue;
         let matchedQty = 0;
         if (buyorder.qty >= remaining) {
@@ -303,15 +309,14 @@ function FilledOrders(
         });
         flipBalance(buyorder.userId, userId, matchedQty, buyprice, symbol);
 
-       
         const fill = {
-          id:crypto.randomUUID(),
+          id: crypto.randomUUID(),
           buyOrderId: buyorder.id,
           sellOrderId: incoming.id,
           symbol,
-          price:buyprice,
-          qty:matchedQty
-        }
+          price: buyprice,
+          qty: matchedQty,
+        };
         FILLS.push(fill);
 
         wsClient.lPush(
@@ -319,8 +324,8 @@ function FilledOrders(
           JSON.stringify({
             stream: `trade.${symbol}`,
             value: {
-              id:fill.id,
-              symbol:fill.symbol,
+              id: fill.id,
+              symbol: fill.symbol,
               price: fill.price,
               qty: fill.qty,
             },
@@ -347,6 +352,9 @@ function FilledOrders(
     for (const askPrice of askOrders) {
       const ordersAtPrice = ask[askPrice];
       for (const askOrder of ordersAtPrice) {
+        if (askOrder.userId === userId) {
+          continue;
+        }
         if (askOrder.qty === 0) continue;
         let matchedQty = 0;
         if (askOrder.qty <= remaining) {
@@ -379,7 +387,6 @@ function FilledOrders(
           remainingBeforeTrade: remaining,
         });
 
-        
         const fill = {
           id: crypto.randomUUID(),
           buyOrderId: incoming.id,
@@ -387,7 +394,7 @@ function FilledOrders(
           symbol,
           price: askPrice,
           qty: matchedQty,
-        }
+        };
 
         FILLS.push(fill);
 
@@ -396,7 +403,7 @@ function FilledOrders(
           JSON.stringify({
             stream: `trade.${symbol}`,
             value: {
-              id:fill.id,
+              id: fill.id,
               symbol,
               price: fill.price,
               qty: fill.qty,
@@ -423,6 +430,9 @@ function FilledOrders(
     for (const buyPrice of buyOrders) {
       const ordersAtPrice = buy[buyPrice];
       for (const buyorder of ordersAtPrice) {
+        if (buyorder.userId === userId) {
+          continue;
+        }
         if (buyorder.qty === 0) continue;
         let matchedQty = 0;
         if (buyorder.qty >= remaining) {
@@ -456,7 +466,6 @@ function FilledOrders(
         });
         flipBalance(buyorder.userId, userId, matchedQty, buyPrice, symbol);
 
-        
         const fill = {
           id: crypto.randomUUID(),
           buyOrderId: buyorder.id,
@@ -464,7 +473,7 @@ function FilledOrders(
           symbol,
           qty: matchedQty,
           price: buyPrice,
-        }
+        };
 
         FILLS.push(fill);
 
@@ -473,7 +482,7 @@ function FilledOrders(
           JSON.stringify({
             stream: `trade.${symbol}`,
             value: {
-              id:fill.id,
+              id: fill.id,
               symbol,
               price: fill.price,
               qty: fill.qty,
@@ -547,6 +556,30 @@ function flipBalance(
   });
 }
 
+function estimateMarketBuyCost(symbol: string, qty: number): number {
+  const asks = ORDERBOOK[symbol].asks;
+  const askPrices = Object.keys(asks)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  let remaining = qty;
+  let totalCost = 0;
+
+  for (const askPrice of askPrices) {
+    for (const order of asks[askPrice]) {
+      if (order.qty === 0) continue;
+      const matched = Math.min(order.qty, remaining);
+      totalCost += matched * askPrice;
+      remaining -= matched;
+      if (remaining === 0) break;
+    }
+    if (remaining === 0) break;
+  }
+
+  if (remaining > 0) return -1; // not enough liquidity
+  return totalCost;
+}
+
 while (1) {
   const response = await client.brPop("incoming-order", 1);
   if (!response) {
@@ -565,16 +598,30 @@ while (1) {
       if (BALANCES[userId].INR.available < requiredAmt) {
         publisherClient.lPush(
           "response-queue",
-          JSON.stringify({
-            identifier,
-            success: false,
-          }),
+          JSON.stringify({ identifier, success: false }),
         );
         continue;
       }
-
       BALANCES[userId].INR.available -= requiredAmt;
       BALANCES[userId].INR.locked += requiredAmt;
+    } else if (side === "BUY" && type === "MARKET") {
+      const estimatedCost = estimateMarketBuyCost(symbol, qty);
+      if (estimatedCost === -1) {
+        publisherClient.lPush(
+          "response-queue",
+          JSON.stringify({ identifier, success: false }),
+        );
+        continue;
+      }
+      if (BALANCES[userId].INR.available < estimatedCost) {
+        publisherClient.lPush(
+          "response-queue",
+          JSON.stringify({ identifier, success: false }),
+        );
+        continue;
+      }
+      BALANCES[userId].INR.available -= estimatedCost;
+      BALANCES[userId].INR.locked += estimatedCost;
     } else if (side === "SELL") {
       if (
         !BALANCES[userId][symbol] ||
@@ -623,40 +670,40 @@ while (1) {
       incoming.status = "PARTIAL";
     }
 
-    ORDERS.push(incoming);
-
     // Only a LIMIT order can have leftover qty that rests on the book.
     // MARKET orders either fill fully or the remainder is discarded
     // (no MARKET resting), so no depth push is needed for MARKET here -
     // all of that was already handled inside FilledOrders above.
+    ORDERS.push(incoming);
+
     if (remainingQty > 0 && type === "LIMIT") {
       incoming.qty = remainingQty;
+
       if (side === "BUY") {
         if (!ORDERBOOK[symbol].bids[price]) {
           ORDERBOOK[symbol].bids[price] = [];
         }
+
         ORDERBOOK[symbol].bids[price].push(incoming);
 
-        // BID LEVEL JUST CHANGED: a brand new (or larger) resting bid
-        // was added at `price`. Recompute the total qty resting at that
-        // price and push it as a bids delta.
         const qtyAtPrice = ORDERBOOK[symbol].bids[price].reduce(
           (acc, curr) => acc + curr.qty,
           0,
         );
+
         pushDepthDelta(symbol, "bids", price, qtyAtPrice);
       } else {
         if (!ORDERBOOK[symbol].asks[price]) {
           ORDERBOOK[symbol].asks[price] = [];
         }
+
         ORDERBOOK[symbol].asks[price].push(incoming);
 
-        // ASK LEVEL JUST CHANGED: mirror of the BUY case above, but on
-        // the asks side, since a SELL remainder rests as a new ask.
         const qtyAtPrice = ORDERBOOK[symbol].asks[price].reduce(
           (acc, curr) => acc + curr.qty,
           0,
         );
+
         pushDepthDelta(symbol, "asks", price, qtyAtPrice);
       }
     }

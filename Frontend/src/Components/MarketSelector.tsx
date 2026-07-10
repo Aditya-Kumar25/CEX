@@ -1,39 +1,52 @@
 import { useNavigate } from "react-router-dom";
 
-import {
-  SUPPORTED_SYMBOLS,
-  type MarketSymbol,
-} from "../types/symbol";
+import type {
+  Stock,
+} from "../Services/trading";
 
 type MarketSelectorProps = {
-  activeSymbol: MarketSymbol;
+  stocks: Stock[];
+  activeSymbol: string;
+  loading: boolean;
+  error: string | null;
 };
 
 export default function MarketSelector({
+  stocks,
   activeSymbol,
+  loading,
+  error,
 }: MarketSelectorProps) {
   const navigate = useNavigate();
 
-  function selectMarket(
-    symbol: MarketSymbol,
-  ) {
+  function selectMarket(symbol: string) {
     navigate(`/trade/${symbol}`);
   }
 
+  if (loading) {
+    return <p>Loading markets...</p>;
+  }
+
+  if (error) {
+    return <p>{error}</p>;
+  }
+
   return (
-    <div>
-      {SUPPORTED_SYMBOLS.map((symbol) => (
+    <nav>
+      {stocks.map((stock) => (
         <button
-          key={symbol}
+          key={stock.id}
           type="button"
           onClick={() =>
-            selectMarket(symbol)
+            selectMarket(stock.symbol)
           }
-          disabled={symbol === activeSymbol}
+          disabled={
+            stock.symbol === activeSymbol
+          }
         >
-          {symbol}
+          {stock.title}
         </button>
       ))}
-    </div>
+    </nav>
   );
 }
