@@ -11,7 +11,7 @@ function App() {
     error,
   } = useOrderBook("BTC");
 
-  const trades = useTrades("BTC");
+  const { trades } = useTrades("BTC");
 
   if (loading) {
     return <div>Synchronizing orderbook...</div>;

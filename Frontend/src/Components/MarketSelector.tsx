@@ -24,29 +24,43 @@ export default function MarketSelector({
   }
 
   if (loading) {
-    return <p>Loading markets...</p>;
+    return (
+      <div className="h-10 px-4 flex items-center border-b border-zinc-800 bg-zinc-950/40">
+        <span className="text-xs text-zinc-500">Loading markets...</span>
+      </div>
+    );
   }
 
   if (error) {
-    return <p>{error}</p>;
+    return (
+      <div className="h-10 px-4 flex items-center border-b border-zinc-800 bg-zinc-950/40">
+        <span className="text-xs text-rose-500">{error}</span>
+      </div>
+    );
   }
 
   return (
-    <nav>
-      {stocks.map((stock) => (
-        <button
-          key={stock.id}
-          type="button"
-          onClick={() =>
-            selectMarket(stock.symbol)
-          }
-          disabled={
-            stock.symbol === activeSymbol
-          }
-        >
-          {stock.title}
-        </button>
-      ))}
+    <nav className="h-10 px-4 border-b border-zinc-800 bg-zinc-950/50 flex items-center space-x-1.5 overflow-x-auto select-none">
+      <span className="text-[10px] text-zinc-500 font-semibold tracking-wider uppercase mr-3">
+        Markets:
+      </span>
+      {stocks.map((stock) => {
+        const isActive = stock.symbol === activeSymbol;
+        return (
+          <button
+            key={stock.id}
+            type="button"
+            onClick={() => selectMarket(stock.symbol)}
+            className={`text-xs font-mono font-medium px-3 py-1 rounded border transition-all cursor-pointer ${
+              isActive
+                ? "text-zinc-100 bg-zinc-900 border-zinc-700/80"
+                : "text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900/30 hover:border-zinc-800"
+            }`}
+          >
+            {stock.symbol}
+          </button>
+        );
+      })}
     </nav>
   );
 }

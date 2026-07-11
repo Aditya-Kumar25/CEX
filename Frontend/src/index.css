@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-[#0C0C0E] text-zinc-200 antialiased selection:bg-zinc-800 selection:text-white overflow-x-hidden;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  /* Dense webkit scrollbars for panels */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-zinc-800 rounded;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-zinc-700;
+  }
+}

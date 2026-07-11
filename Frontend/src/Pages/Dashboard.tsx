@@ -52,11 +52,21 @@ export default function Dashboard() {
     routeSymbol?.toUpperCase();
 
   if (stocksLoading) {
-    return <p>Loading exchange...</p>;
+    return (
+      <div className="min-h-screen bg-[#0C0C0E] flex items-center justify-center">
+        <p className="text-sm text-zinc-500 animate-pulse">Loading exchange...</p>
+      </div>
+    );
   }
 
   if (stocksError) {
-    return <p>{stocksError}</p>;
+    return (
+      <div className="min-h-screen bg-[#0C0C0E] flex items-center justify-center p-4">
+        <div className="bg-red-950/20 border border-red-900/50 p-4 rounded max-w-md">
+          <p className="text-sm text-rose-400 font-mono">{stocksError}</p>
+        </div>
+      </div>
+    );
   }
 
   const marketExists = stocks.some(
@@ -68,7 +78,11 @@ export default function Dashboard() {
       stocks[0]?.symbol;
 
     if (!defaultSymbol) {
-      return <p>No markets available.</p>;
+      return (
+        <div className="min-h-screen bg-[#0C0C0E] flex items-center justify-center">
+          <p className="text-sm text-zinc-500">No markets available.</p>
+        </div>
+      );
     }
 
     return (
@@ -141,12 +155,14 @@ function TradingDashboard({
   } = useTrades(symbol);
 
   return (
-    <main>
+    <div className="min-h-screen max-h-screen flex flex-col bg-[#0C0C0E] text-zinc-100 overflow-hidden">
+      {/* Header */}
       <MarketHeader
         symbol={symbol}
         onLogout={onLogout}
       />
 
+      {/* Market Selector */}
       <MarketSelector
         stocks={stocks}
         activeSymbol={symbol}
@@ -154,39 +170,57 @@ function TradingDashboard({
         error={null}
       />
 
-      <div>
-        <OrderBook
-          bids={bids}
-          asks={asks}
-          offset={offset}
-          loading={loading}
-          synced={synced}
-          error={error}
-        />
+      {/* Main Terminal Workspace */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto lg:overflow-hidden select-none">
+        
+        {/* Top Split Panel (Grid of widgets) */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 min-h-0 flex-1">
+          {/* Order Book */}
+          <div className="min-h-[350px] lg:min-h-0 lg:h-full">
+            <OrderBook
+              bids={bids}
+              asks={asks}
+              offset={offset}
+              loading={loading}
+              synced={synced}
+              error={error}
+            />
+          </div>
 
-        <RecentTrades
-          symbol={symbol}
-          trades={trades}
-          loading={tradesLoading}
-          error={tradesError}
-        />
+          {/* Recent Trades */}
+          <div className="min-h-[350px] lg:min-h-0 lg:h-full">
+            <RecentTrades
+              symbol={symbol}
+              trades={trades}
+              loading={tradesLoading}
+              error={tradesError}
+            />
+          </div>
 
-        <OrderForm
-          symbol={symbol}
-          onOrderPlaced={onRefresh}
-        />
+          {/* Order Entry Form */}
+          <div className="min-h-[350px] lg:min-h-0 lg:h-full">
+            <OrderForm
+              symbol={symbol}
+              onOrderPlaced={onRefresh}
+            />
+          </div>
+
+          {/* Balances */}
+          <div className="min-h-[350px] lg:min-h-0 lg:h-full">
+            <Balance
+              refreshKey={refreshKey}
+            />
+          </div>
+        </div>
+
+        {/* Bottom Activity Section (User Active/Closed Orders) */}
+        <div className="h-[220px] shrink-0 border-t border-zinc-800">
+          <UserOrders
+            refreshKey={refreshKey}
+            onOrderChanged={onRefresh}
+          />
+        </div>
       </div>
-
-      <div>
-        <Balance
-          refreshKey={refreshKey}
-        />
-
-        <UserOrders
-          refreshKey={refreshKey}
-          onOrderChanged={onRefresh}
-        />
-      </div>
-    </main>
+    </div>
   );
 }
