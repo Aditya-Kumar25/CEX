@@ -15,7 +15,7 @@ const streamListeners: Record<string, Set<Listener>> = {};
 let ws: WebSocket | null = null;
 let requestId = 1;
 
-const WS_URL = "ws://localhost:8080";
+import { WS_URL } from "../config";
 
 function sendSubscribe(stream: string) {
   if (!ws || ws.readyState !== WebSocket.OPEN) {

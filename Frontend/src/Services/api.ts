@@ -3,7 +3,7 @@ import type {
   OrderBookSnapshot,
 } from "../types/market";
 
-const API_URL = "http://localhost:3000";
+import { API_URL } from "../config";
 
 export async function getOrderBook(
   symbol: string,

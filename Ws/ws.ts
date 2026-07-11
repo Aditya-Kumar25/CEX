@@ -31,6 +31,10 @@ function unsubscribe(stream: string, socket: WebSocket) {
   }
 }
 
+function isValidStream(stream: string) {
+  return stream.startsWith("depth.") || stream.startsWith("trade.");
+}
+
 function removeSocketFromAll(socket: WebSocket) {
   for (const stream of Object.keys(activeSubscriptions)) {
     unsubscribe(stream, socket);
@@ -52,19 +56,14 @@ async function poll() {
       try {
         parsedData = JSON.parse(data.element);
       } catch (err) {
-        console.log(
-          "Bad ws-queue payload, skipping:",
-          data.element,
-          err,
-        );
+        console.log("Bad ws-queue payload, skipping:", data.element, err);
 
         continue;
       }
 
       if (!parsedData.stream) continue;
 
-      const subscribers =
-        activeSubscriptions[parsedData.stream];
+      const subscribers = activeSubscriptions[parsedData.stream];
 
       if (!subscribers || subscribers.size === 0) {
         continue;
@@ -83,9 +82,7 @@ async function poll() {
     } catch (err) {
       console.log("WS queue polling error:", err);
 
-      await new Promise((resolve) =>
-        setTimeout(resolve, 1000),
-      );
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 }
@@ -94,6 +91,7 @@ poll();
 
 const wss = new WebSocketServer({
   port: PORT,
+  host: "0.0.0.0",
 });
 
 console.log(`WS server listening on ws://localhost:${PORT}`);
@@ -114,11 +112,11 @@ wss.on("connection", (socket) => {
       return;
     }
 
-    if (
-      parsedData.method === "SUBSCRIBE" &&
-      parsedData.params
-    ) {
+    if (parsedData.method === "SUBSCRIBE" && parsedData.params) {
       for (const stream of parsedData.params) {
+        if (!isValidStream(stream)) {
+          continue;
+        }
         subscribe(stream, socket);
       }
 
@@ -130,11 +128,11 @@ wss.on("connection", (socket) => {
       );
     }
 
-    if (
-      parsedData.method === "UNSUBSCRIBE" &&
-      parsedData.params
-    ) {
+    if (parsedData.method === "UNSUBSCRIBE" && parsedData.params) {
       for (const stream of parsedData.params) {
+        if (!isValidStream(stream)) {
+          continue;
+        }
         unsubscribe(stream, socket);
       }
 

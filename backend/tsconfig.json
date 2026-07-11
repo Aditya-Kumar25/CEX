@@ -6,8 +6,8 @@
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": true,
- "types": ["bun-types"],
     "moduleResolution": "bundler",
+    "types": ["node"],
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
@@ -23,5 +23,14 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+    ,
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/types"
+    ]
+  },
+  "exclude": [
+    "tests",
+    "node_modules"
+  ]
 }
