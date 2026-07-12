@@ -1,13 +1,23 @@
 import crypto from "node:crypto";
 import { client, publisherClient } from "./config/redis";
 import type { Order } from "./types";
-import { STOCKS, ORDERS, ORDERBOOK } from "./engine/orderbook";
-import { FILLS } from "./engine/fills";
-import { BALANCES, ensureUserBalance } from "./engine/balance";
-import { Depth_Update, pushDepthDelta } from "./engine/depth";
-import { FilledOrders } from "./engine/matchingEngine";
-import { estimateMarketBuyCost } from "./engine/marketOrders";
-import { cancelOrder } from "./engine/cancellation";
+import { STOCKS, ORDERS, ORDERBOOK } from "./core/orderbook";
+import { FILLS } from "./core/fills";
+import { BALANCES, ensureUserBalance } from "./core/balance";
+import { Depth_Update, pushDepthDelta } from "./core/depth";
+import { FilledOrders } from "./core/matchingEngine";
+import { estimateMarketBuyCost } from "./core/marketOrders";
+import { cancelOrder } from "./core/cancellation";
+import { loadSnapshot } from "./persistence/loadsnapshot";
+import { saveSnapshot } from "./persistence/savesnapshot";
+
+await loadSnapshot();
+
+setInterval(() => {
+  saveSnapshot().catch((err) => {
+    console.error("[Snapshot] Background save failed:", err);
+  });
+}, 15000);
 
 while (1) {
   const response = await client.brPop("incoming-order", 1);
