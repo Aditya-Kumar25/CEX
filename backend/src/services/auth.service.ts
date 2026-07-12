@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/prisma";
+import { env } from "../config/env";
 
 export async function registerUser(email: string, username: string, password: string): Promise<any> {
   const exists = await prisma.user.findUnique({
@@ -45,7 +46,7 @@ export async function authenticateUser(email: string, password: string): Promise
     {
       userId: exists.id,
     },
-    "mysecret",
+    env.JWT_SECRET,
   );
 
   return { success: true, isMatch: true, token };
