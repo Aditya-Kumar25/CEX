@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  typecheck-and-build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [Frontend, backend, engine, Ws]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Setup Node.js specifically for Frontend
+      - name: Setup Node.js (Frontend)
+        if: matrix.service == 'Frontend'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: Frontend/package.json
+
+      # Setup Bun for backend, engine, and Ws
+      - name: Setup Bun (Bun services)
+        if: matrix.service != 'Frontend'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.x
+
+      # Cache Bun dependencies
+      - name: Cache Bun dependencies
+        if: matrix.service != 'Frontend'
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles(format('{0}/bun.lock', matrix.service)) }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          cd ${{ matrix.service }}
+          if [ "${{ matrix.service }}" = "Frontend" ]; then
+            npm install
+          else
+            bun install
+          fi
+
+      # Generate Prisma Client specifically for backend
+      - name: Generate Prisma Client (backend)
+        if: matrix.service == 'backend'
+        run: |
+          cd backend
+          bunx prisma generate
+
+      # Run TypeScript typechecks
+      - name: Run TypeScript typecheck
+        run: |
+          cd ${{ matrix.service }}
+          if [ "${{ matrix.service }}" = "Frontend" ]; then
+            npm run build -- --noEmit
+          else
+            bunx tsc --noEmit
+          fi
+
+      # Verify production build compilation
+      - name: Build service
+        run: |
+          cd ${{ matrix.service }}
+          if [ "${{ matrix.service }}" = "Frontend" ]; then
+            npm run build
+          elif [ "${{ matrix.service }}" = "backend" ]; then
+            bun run build
+          else
+            echo "Skipping build for ${{ matrix.service }} (no build script needed)"
+          fi
+
+  docker-build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [Frontend, backend, engine, Ws]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service }}
+          file: ./${{ matrix.service }}/Dockerfile
+          push: false
+          tags: cex-${{ matrix.service }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
