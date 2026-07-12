@@ -1,10 +1,23 @@
 {
   "version": "1.0.0",
-  "createdAt": "2026-07-12T07:14:09.928Z",
+  "createdAt": "2026-07-12T07:45:12.470Z",
   "engine": {
     "orderbook": {
       "TESLA": {
         "bids": {
+          "9": [
+            {
+              "id": "b28dbd71-cbac-4447-aaac-0a4ab5226ea6",
+              "userId": "cmrhfbp7400013wfa1sm80mrw",
+              "symbol": "TESLA",
+              "side": "BUY",
+              "type": "LIMIT",
+              "qty": 9,
+              "status": "OPEN",
+              "price": 9,
+              "filledqty": 0
+            }
+          ],
           "100": [
             {
               "id": "27100c48-36a8-4dab-afe6-de983e4c46f8",
@@ -90,8 +103,8 @@
               "symbol": "TESLA",
               "side": "BUY",
               "type": "LIMIT",
-              "qty": 2,
-              "status": "PARTIAL",
+              "qty": 0,
+              "status": "FILLED",
               "price": 9000,
               "filledqty": 0
             }
@@ -141,6 +154,19 @@
       },
       "SPACEX": {
         "bids": {
+          "9": [
+            {
+              "id": "683a71c7-1615-4936-9c81-0683088347e2",
+              "userId": "cmrhf9g9700003wfa39ay4qdc",
+              "symbol": "SPACEX",
+              "side": "BUY",
+              "type": "LIMIT",
+              "qty": 0,
+              "status": "FILLED",
+              "price": 9,
+              "filledqty": 0
+            }
+          ],
           "10": [
             {
               "id": "d147537b-ac33-4c12-90f6-f3d0b760fd6e",
@@ -148,10 +174,60 @@
               "symbol": "SPACEX",
               "side": "BUY",
               "type": "LIMIT",
-              "qty": 1,
-              "status": "PARTIAL",
+              "qty": 0,
+              "status": "FILLED",
               "price": 10,
               "filledqty": 5
+            },
+            {
+              "id": "84db51be-514b-40cb-b140-5d4480b1791c",
+              "userId": "cmrhf9g9700003wfa39ay4qdc",
+              "symbol": "SPACEX",
+              "side": "BUY",
+              "type": "LIMIT",
+              "qty": 0,
+              "status": "FILLED",
+              "price": 10,
+              "filledqty": 0
+            }
+          ],
+          "11": [
+            {
+              "id": "9d962bf5-4430-444c-8837-c06e37291cb0",
+              "userId": "cmrhf9g9700003wfa39ay4qdc",
+              "symbol": "SPACEX",
+              "side": "BUY",
+              "type": "LIMIT",
+              "qty": 0,
+              "status": "FILLED",
+              "price": 11,
+              "filledqty": 0
+            }
+          ],
+          "1000": [
+            {
+              "id": "fc517cd3-944d-4ce1-9b5c-4edfd18a7f8e",
+              "userId": "cmrhh1jc00000twfahyswe07g",
+              "symbol": "SPACEX",
+              "side": "BUY",
+              "type": "LIMIT",
+              "qty": 0,
+              "status": "FILLED",
+              "price": 1000,
+              "filledqty": 0
+            }
+          ],
+          "10000": [
+            {
+              "id": "563ab7ea-0d4c-48a5-a763-c276be6882bd",
+              "userId": "cmrhh1jc00000twfahyswe07g",
+              "symbol": "SPACEX",
+              "side": "BUY",
+              "type": "LIMIT",
+              "qty": 3,
+              "status": "OPEN",
+              "price": 10000,
+              "filledqty": 0
             }
           ]
         },
@@ -168,18 +244,116 @@
               "price": 9,
               "filledqty": 0
             }
+          ],
+          "10": [
+            {
+              "id": "4359beec-e625-4e76-a06a-2337ff4a7590",
+              "userId": "cmrhfbp7400013wfa1sm80mrw",
+              "symbol": "SPACEX",
+              "side": "SELL",
+              "type": "LIMIT",
+              "qty": 0,
+              "status": "FILLED",
+              "price": 10,
+              "filledqty": 1
+            },
+            {
+              "id": "aaa5296f-bba2-4d9b-b418-85d7b9483086",
+              "userId": "cmrhfbp7400013wfa1sm80mrw",
+              "symbol": "SPACEX",
+              "side": "SELL",
+              "type": "LIMIT",
+              "qty": 0,
+              "status": "FILLED",
+              "price": 10,
+              "filledqty": 0
+            },
+            {
+              "id": "f6ed8289-0dce-4b0f-b581-0cc44bb5b000",
+              "userId": "cmrhfbp7400013wfa1sm80mrw",
+              "symbol": "SPACEX",
+              "side": "SELL",
+              "type": "LIMIT",
+              "qty": 0,
+              "status": "FILLED",
+              "price": 10,
+              "filledqty": 0
+            },
+            {
+              "id": "e40e1884-664c-45bd-b4e7-ff8b5ce0c9b4",
+              "userId": "cmrhfbp7400013wfa1sm80mrw",
+              "symbol": "SPACEX",
+              "side": "SELL",
+              "type": "LIMIT",
+              "qty": 0,
+              "status": "FILLED",
+              "price": 10,
+              "filledqty": 0
+            }
+          ],
+          "11": [
+            {
+              "id": "a99a6d7a-0e21-430c-a161-73f5e18edacb",
+              "userId": "cmrhfbp7400013wfa1sm80mrw",
+              "symbol": "SPACEX",
+              "side": "SELL",
+              "type": "LIMIT",
+              "qty": 0,
+              "status": "FILLED",
+              "price": 11,
+              "filledqty": 0
+            },
+            {
+              "id": "645063cd-77e5-4e18-b61c-c28e7c3d9d3f",
+              "userId": "cmrhfbp7400013wfa1sm80mrw",
+              "symbol": "SPACEX",
+              "side": "SELL",
+              "type": "LIMIT",
+              "qty": 0,
+              "status": "FILLED",
+              "price": 11,
+              "filledqty": 5
+            }
           ]
         }
       },
       "BTC": {
-        "bids": {},
-        "asks": {}
+        "bids": {
+          "9": [
+            {
+              "id": "207dbed5-5cf6-485a-b2f9-f899fadf6e3c",
+              "userId": "cmrhh38xm0001twfay04x7kjv",
+              "symbol": "BTC",
+              "side": "BUY",
+              "type": "LIMIT",
+              "qty": 0,
+              "status": "FILLED",
+              "price": 9,
+              "filledqty": 0
+            }
+          ]
+        },
+        "asks": {
+          "10": [
+            {
+              "id": "049fde49-2ea2-47e3-96be-281f6a7e940a",
+              "userId": "cmrhh1jc00000twfahyswe07g",
+              "symbol": "BTC",
+              "side": "SELL",
+              "type": "LIMIT",
+              "qty": 0,
+              "status": "FILLED",
+              "price": 10,
+              "filledqty": 0
+            }
+          ]
+        }
       }
     },
     "balances": {
       "cmrhf9g9700003wfa39ay4qdc": {
         "INR": {
-          "available": 1373065,
+          "available": 1390940,
           "locked": 0
         },
         "BTC": {
@@ -187,11 +361,11 @@
           "locked": 0
         },
         "TESLA": {
-          "available": 2,
+          "available": 0,
           "locked": 10
         },
         "SPACEX": {
-          "available": 45,
+          "available": 57,
           "locked": 0
         }
       },
@@ -215,20 +389,74 @@
       },
       "cmrhfbp7400013wfa1sm80mrw": {
         "INR": {
-          "available": 569696,
-          "locked": 57239
+          "available": 569815,
+          "locked": 39310
         },
         "BTC": {
           "available": 20,
           "locked": 0
         },
         "TESLA": {
-          "available": 88,
+          "available": 90,
           "locked": 0
         },
         "SPACEX": {
-          "available": 55,
+          "available": 37,
           "locked": 0
+        }
+      },
+      "cmrhgxzpe00023wfa65jiflgd": {
+        "INR": {
+          "available": 1000000,
+          "locked": 0
+        },
+        "BTC": {
+          "available": 20,
+          "locked": 0
+        },
+        "TESLA": {
+          "available": 50,
+          "locked": 0
+        },
+        "SPACEX": {
+          "available": 50,
+          "locked": 0
+        }
+      },
+      "cmrhh1jc00000twfahyswe07g": {
+        "INR": {
+          "available": 951964,
+          "locked": 30000
+        },
+        "BTC": {
+          "available": 17,
+          "locked": 0
+        },
+        "TESLA": {
+          "available": 50,
+          "locked": 0
+        },
+        "SPACEX": {
+          "available": 74,
+          "locked": 0
+        }
+      },
+      "cmrhh38xm0001twfay04x7kjv": {
+        "INR": {
+          "available": 1017971,
+          "locked": 0
+        },
+        "BTC": {
+          "available": 23,
+          "locked": 0
+        },
+        "TESLA": {
+          "available": 50,
+          "locked": 0
+        },
+        "SPACEX": {
+          "available": 29,
+          "locked": 3
         }
       }
     },
@@ -419,6 +647,281 @@
         "status": "PARTIAL",
         "price": 10,
         "filledqty": 5
+      },
+      {
+        "id": "b28dbd71-cbac-4447-aaac-0a4ab5226ea6",
+        "userId": "cmrhfbp7400013wfa1sm80mrw",
+        "symbol": "TESLA",
+        "side": "BUY",
+        "type": "LIMIT",
+        "qty": 9,
+        "status": "OPEN",
+        "price": 9,
+        "filledqty": 0
+      },
+      {
+        "id": "14e4644b-8692-4d8e-8012-0df5c7a38b23",
+        "userId": "cmrhf9g9700003wfa39ay4qdc",
+        "symbol": "TESLA",
+        "side": "SELL",
+        "type": "LIMIT",
+        "qty": 2,
+        "status": "FILLED",
+        "price": 10,
+        "filledqty": 2
+      },
+      {
+        "id": "84db51be-514b-40cb-b140-5d4480b1791c",
+        "userId": "cmrhf9g9700003wfa39ay4qdc",
+        "symbol": "SPACEX",
+        "side": "BUY",
+        "type": "LIMIT",
+        "qty": 0,
+        "status": "FILLED",
+        "price": 10,
+        "filledqty": 0
+      },
+      {
+        "id": "4359beec-e625-4e76-a06a-2337ff4a7590",
+        "userId": "cmrhfbp7400013wfa1sm80mrw",
+        "symbol": "SPACEX",
+        "side": "SELL",
+        "type": "LIMIT",
+        "qty": 0,
+        "status": "FILLED",
+        "price": 10,
+        "filledqty": 1
+      },
+      {
+        "id": "aaa5296f-bba2-4d9b-b418-85d7b9483086",
+        "userId": "cmrhfbp7400013wfa1sm80mrw",
+        "symbol": "SPACEX",
+        "side": "SELL",
+        "type": "LIMIT",
+        "qty": 0,
+        "status": "FILLED",
+        "price": 10,
+        "filledqty": 0
+      },
+      {
+        "id": "5bec24e0-10cd-4b65-809c-89271cc4a456",
+        "userId": "cmrhf9g9700003wfa39ay4qdc",
+        "symbol": "SPACEX",
+        "side": "BUY",
+        "type": "LIMIT",
+        "qty": 1,
+        "status": "FILLED",
+        "price": 10,
+        "filledqty": 1
+      },
+      {
+        "id": "683a71c7-1615-4936-9c81-0683088347e2",
+        "userId": "cmrhf9g9700003wfa39ay4qdc",
+        "symbol": "SPACEX",
+        "side": "BUY",
+        "type": "LIMIT",
+        "qty": 0,
+        "status": "FILLED",
+        "price": 9,
+        "filledqty": 0
+      },
+      {
+        "id": "a99a6d7a-0e21-430c-a161-73f5e18edacb",
+        "userId": "cmrhfbp7400013wfa1sm80mrw",
+        "symbol": "SPACEX",
+        "side": "SELL",
+        "type": "LIMIT",
+        "qty": 0,
+        "status": "FILLED",
+        "price": 11,
+        "filledqty": 0
+      },
+      {
+        "id": "aa831f9c-e68a-45ac-844d-da4f9a27f4ab",
+        "userId": "cmrhf9g9700003wfa39ay4qdc",
+        "symbol": "SPACEX",
+        "side": "BUY",
+        "type": "LIMIT",
+        "qty": 2,
+        "status": "FILLED",
+        "price": 11,
+        "filledqty": 2
+      },
+      {
+        "id": "4784d801-8a75-4ad3-a84f-0304dbbe0b2b",
+        "userId": "cmrhf9g9700003wfa39ay4qdc",
+        "symbol": "SPACEX",
+        "side": "BUY",
+        "type": "LIMIT",
+        "qty": 1,
+        "status": "FILLED",
+        "price": 11,
+        "filledqty": 1
+      },
+      {
+        "id": "9d962bf5-4430-444c-8837-c06e37291cb0",
+        "userId": "cmrhf9g9700003wfa39ay4qdc",
+        "symbol": "SPACEX",
+        "side": "BUY",
+        "type": "LIMIT",
+        "qty": 0,
+        "status": "FILLED",
+        "price": 11,
+        "filledqty": 0
+      },
+      {
+        "id": "645063cd-77e5-4e18-b61c-c28e7c3d9d3f",
+        "userId": "cmrhfbp7400013wfa1sm80mrw",
+        "symbol": "SPACEX",
+        "side": "SELL",
+        "type": "LIMIT",
+        "qty": 5,
+        "status": "PARTIAL",
+        "price": 11,
+        "filledqty": 5
+      },
+      {
+        "id": "f6ed8289-0dce-4b0f-b581-0cc44bb5b000",
+        "userId": "cmrhfbp7400013wfa1sm80mrw",
+        "symbol": "SPACEX",
+        "side": "SELL",
+        "type": "LIMIT",
+        "qty": 1,
+        "status": "OPEN",
+        "price": 10,
+        "filledqty": 0
+      },
+      {
+        "id": "b03e086a-d850-4948-acbd-0c671f1eda93",
+        "userId": "cmrhfbp7400013wfa1sm80mrw",
+        "symbol": "SPACEX",
+        "side": "SELL",
+        "type": "LIMIT",
+        "qty": 2,
+        "status": "FILLED",
+        "price": 9,
+        "filledqty": 2
+      },
+      {
+        "id": "e40e1884-664c-45bd-b4e7-ff8b5ce0c9b4",
+        "userId": "cmrhfbp7400013wfa1sm80mrw",
+        "symbol": "SPACEX",
+        "side": "SELL",
+        "type": "LIMIT",
+        "qty": 1,
+        "status": "OPEN",
+        "price": 10,
+        "filledqty": 0
+      },
+      {
+        "id": "207dbed5-5cf6-485a-b2f9-f899fadf6e3c",
+        "userId": "cmrhh38xm0001twfay04x7kjv",
+        "symbol": "BTC",
+        "side": "BUY",
+        "type": "LIMIT",
+        "qty": 0,
+        "status": "FILLED",
+        "price": 9,
+        "filledqty": 0
+      },
+      {
+        "id": "1aee5600-2aaf-4b64-8ccd-411e1fcc9d44",
+        "userId": "cmrhh1jc00000twfahyswe07g",
+        "symbol": "BTC",
+        "side": "SELL",
+        "type": "LIMIT",
+        "qty": 1,
+        "status": "FILLED",
+        "price": 9,
+        "filledqty": 1
+      },
+      {
+        "id": "049fde49-2ea2-47e3-96be-281f6a7e940a",
+        "userId": "cmrhh1jc00000twfahyswe07g",
+        "symbol": "BTC",
+        "side": "SELL",
+        "type": "LIMIT",
+        "qty": 0,
+        "status": "FILLED",
+        "price": 10,
+        "filledqty": 0
+      },
+      {
+        "id": "d38ac295-189f-43e9-b073-c75998bf73b5",
+        "userId": "cmrhh38xm0001twfay04x7kjv",
+        "symbol": "BTC",
+        "side": "BUY",
+        "type": "LIMIT",
+        "qty": 2,
+        "status": "FILLED",
+        "price": 10,
+        "filledqty": 2
+      },
+      {
+        "id": "db8b6e06-72f8-4c09-b81a-4f17ba3876af",
+        "userId": "cmrhh1jc00000twfahyswe07g",
+        "symbol": "SPACEX",
+        "side": "SELL",
+        "type": "LIMIT",
+        "qty": 1,
+        "status": "FILLED",
+        "price": 10,
+        "filledqty": 1
+      },
+      {
+        "id": "bb1e51b2-600e-43ed-be88-b9fe389c11e8",
+        "userId": "cmrhh1jc00000twfahyswe07g",
+        "symbol": "SPACEX",
+        "side": "BUY",
+        "type": "LIMIT",
+        "qty": 2,
+        "status": "FILLED",
+        "price": 10,
+        "filledqty": 2
+      },
+      {
+        "id": "8f6f6522-43b3-4eae-beaf-a1165b38588d",
+        "userId": "cmrhh1jc00000twfahyswe07g",
+        "symbol": "SPACEX",
+        "side": "BUY",
+        "type": "LIMIT",
+        "qty": 5,
+        "status": "FILLED",
+        "price": 11,
+        "filledqty": 5
+      },
+      {
+        "id": "fc517cd3-944d-4ce1-9b5c-4edfd18a7f8e",
+        "userId": "cmrhh1jc00000twfahyswe07g",
+        "symbol": "SPACEX",
+        "side": "BUY",
+        "type": "LIMIT",
+        "qty": 0,
+        "status": "FILLED",
+        "price": 1000,
+        "filledqty": 0
+      },
+      {
+        "id": "6d236b39-2c6b-483f-b3db-91cde9d91f5f",
+        "userId": "cmrhh38xm0001twfay04x7kjv",
+        "symbol": "SPACEX",
+        "side": "SELL",
+        "type": "MARKET",
+        "qty": 21,
+        "status": "PARTIAL",
+        "price": 0,
+        "filledqty": 18
+      },
+      {
+        "id": "563ab7ea-0d4c-48a5-a763-c276be6882bd",
+        "userId": "cmrhh1jc00000twfahyswe07g",
+        "symbol": "SPACEX",
+        "side": "BUY",
+        "type": "LIMIT",
+        "qty": 3,
+        "status": "OPEN",
+        "price": 10000,
+        "filledqty": 0
       }
     ],
     "fills": [
@@ -485,12 +988,132 @@
         "symbol": "SPACEX",
         "price": 9,
         "qty": 5
+      },
+      {
+        "id": "9b5923e2-e987-4fbe-b8f8-888fe8f9a228",
+        "buyOrderId": "8c37750d-3717-44ff-8e2d-bf0006006043",
+        "sellOrderId": "14e4644b-8692-4d8e-8012-0df5c7a38b23",
+        "symbol": "TESLA",
+        "price": 9000,
+        "qty": 2
+      },
+      {
+        "id": "3f07566e-30c1-41fd-a176-d2632da60461",
+        "buyOrderId": "84db51be-514b-40cb-b140-5d4480b1791c",
+        "sellOrderId": "4359beec-e625-4e76-a06a-2337ff4a7590",
+        "symbol": "SPACEX",
+        "price": 10,
+        "qty": 1
+      },
+      {
+        "id": "d9241323-d03a-43ae-b257-2f9501c120c3",
+        "buyOrderId": "5bec24e0-10cd-4b65-809c-89271cc4a456",
+        "sellOrderId": "4359beec-e625-4e76-a06a-2337ff4a7590",
+        "symbol": "SPACEX",
+        "price": 10,
+        "qty": 1
+      },
+      {
+        "id": "d2323477-ffbf-4654-859b-33a79fa8597a",
+        "buyOrderId": "aa831f9c-e68a-45ac-844d-da4f9a27f4ab",
+        "sellOrderId": "aaa5296f-bba2-4d9b-b418-85d7b9483086",
+        "symbol": "SPACEX",
+        "price": 10,
+        "qty": 1
+      },
+      {
+        "id": "358d5f49-100a-48fe-b6ef-4eb0d25b61f6",
+        "buyOrderId": "aa831f9c-e68a-45ac-844d-da4f9a27f4ab",
+        "sellOrderId": "a99a6d7a-0e21-430c-a161-73f5e18edacb",
+        "symbol": "SPACEX",
+        "price": 11,
+        "qty": 1
+      },
+      {
+        "id": "7294aa78-935e-4932-95fc-8586b66b963f",
+        "buyOrderId": "4784d801-8a75-4ad3-a84f-0304dbbe0b2b",
+        "sellOrderId": "a99a6d7a-0e21-430c-a161-73f5e18edacb",
+        "symbol": "SPACEX",
+        "price": 11,
+        "qty": 1
+      },
+      {
+        "id": "246ef5b5-adbd-4da6-8d72-db6234b17f7a",
+        "buyOrderId": "9d962bf5-4430-444c-8837-c06e37291cb0",
+        "sellOrderId": "645063cd-77e5-4e18-b61c-c28e7c3d9d3f",
+        "symbol": "SPACEX",
+        "price": 11,
+        "qty": 5
+      },
+      {
+        "id": "06d9f642-0775-4d7b-9888-5a2f3a75bca1",
+        "buyOrderId": "683a71c7-1615-4936-9c81-0683088347e2",
+        "sellOrderId": "b03e086a-d850-4948-acbd-0c671f1eda93",
+        "symbol": "SPACEX",
+        "price": 9,
+        "qty": 2
+      },
+      {
+        "id": "0eacfe2e-ba32-4e5b-afc1-3d8285cb78c9",
+        "buyOrderId": "207dbed5-5cf6-485a-b2f9-f899fadf6e3c",
+        "sellOrderId": "1aee5600-2aaf-4b64-8ccd-411e1fcc9d44",
+        "symbol": "BTC",
+        "price": 9,
+        "qty": 1
+      },
+      {
+        "id": "ba50acee-6f87-4ec6-af30-e60d538fccc1",
+        "buyOrderId": "d38ac295-189f-43e9-b073-c75998bf73b5",
+        "sellOrderId": "049fde49-2ea2-47e3-96be-281f6a7e940a",
+        "symbol": "BTC",
+        "price": 10,
+        "qty": 2
+      },
+      {
+        "id": "fcc6562b-a1fd-4cdd-b0e6-185d520e8960",
+        "buyOrderId": "d147537b-ac33-4c12-90f6-f3d0b760fd6e",
+        "sellOrderId": "db8b6e06-72f8-4c09-b81a-4f17ba3876af",
+        "symbol": "SPACEX",
+        "price": 10,
+        "qty": 1
+      },
+      {
+        "id": "f255ac96-a251-473c-9281-378e236d7a3e",
+        "buyOrderId": "bb1e51b2-600e-43ed-be88-b9fe389c11e8",
+        "sellOrderId": "f6ed8289-0dce-4b0f-b581-0cc44bb5b000",
+        "symbol": "SPACEX",
+        "price": 10,
+        "qty": 1
+      },
+      {
+        "id": "bb0f3bb7-b78e-4227-816e-25ba39020bfe",
+        "buyOrderId": "bb1e51b2-600e-43ed-be88-b9fe389c11e8",
+        "sellOrderId": "e40e1884-664c-45bd-b4e7-ff8b5ce0c9b4",
+        "symbol": "SPACEX",
+        "price": 10,
+        "qty": 1
+      },
+      {
+        "id": "011387fd-4528-471a-8ce3-7f7d4fa4bdd5",
+        "buyOrderId": "8f6f6522-43b3-4eae-beaf-a1165b38588d",
+        "sellOrderId": "645063cd-77e5-4e18-b61c-c28e7c3d9d3f",
+        "symbol": "SPACEX",
+        "price": 11,
+        "qty": 5
+      },
+      {
+        "id": "fd3e7d4c-1c45-4cbb-9a50-c58a44ae2010",
+        "buyOrderId": "fc517cd3-944d-4ce1-9b5c-4edfd18a7f8e",
+        "sellOrderId": "6d236b39-2c6b-483f-b3db-91cde9d91f5f",
+        "symbol": "SPACEX",
+        "qty": 18,
+        "price": 1000
       }
     ],
     "depthOffset": {
-      "TESLA": 17,
-      "SPACEX": 3,
-      "BTC": 0
+      "TESLA": 19,
+      "SPACEX": 26,
+      "BTC": 4
     }
   }
 }

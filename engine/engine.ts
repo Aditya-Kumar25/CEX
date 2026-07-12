@@ -38,6 +38,8 @@ while (1) {
     const userBalance = BALANCES[userId];
     if (!userBalance) continue;
 
+    let estimatedCost = 0;
+
     if (side === "BUY" && type === "LIMIT") {
       if (userBalance.INR.available < requiredAmt) {
         await publisherClient.lPush(
@@ -49,7 +51,7 @@ while (1) {
       userBalance.INR.available -= requiredAmt;
       userBalance.INR.locked += requiredAmt;
     } else if (side === "BUY" && type === "MARKET") {
-      const estimatedCost = estimateMarketBuyCost(symbol, qty);
+      estimatedCost = estimateMarketBuyCost(symbol, qty);
       if (estimatedCost === -1) {
         await publisherClient.lPush(
           "response-queue",
@@ -111,10 +113,35 @@ while (1) {
       status,
     );
 
-    if (remainingQty === 0) {
-      incoming.status = "FILLED";
-    } else if (remainingQty < qty) {
-      incoming.status = "PARTIAL";
+    if (type === "MARKET") {
+      if (remainingQty === 0) {
+        incoming.status = "FILLED";
+      } else {
+        incoming.status = "CANCELLED";
+        if (side === "SELL") {
+          const userSymbolBalance = userBalance[symbol];
+          if (userSymbolBalance) {
+            userSymbolBalance.available += remainingQty;
+            userSymbolBalance.locked -= remainingQty;
+          }
+        } else if (side === "BUY") {
+          const fillsForOrder = FILLS.filter((f) => f.buyOrderId === incoming.id);
+          const matchedCost = fillsForOrder.reduce((sum, f) => sum + f.qty * f.price, 0);
+          const leftoverINR = estimatedCost - matchedCost;
+          if (leftoverINR > 0) {
+            userBalance.INR.available += leftoverINR;
+            userBalance.INR.locked -= leftoverINR;
+          }
+        }
+      }
+    } else { // LIMIT
+      if (remainingQty === 0) {
+        incoming.status = "FILLED";
+      } else if (remainingQty < qty) {
+        incoming.status = "PARTIAL";
+      } else {
+        incoming.status = "OPEN";
+      }
     }
 
     ORDERS.push(incoming);
