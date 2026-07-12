@@ -1,0 +1,117 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: cex-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=CEX
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d CEX"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
+    networks:
+      - cex-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: cex-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
+    networks:
+      - cex-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cex-backend
+    restart: unless-stopped
+    command: sh -c "bunx prisma db push && bun run src/index.ts"
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/CEX
+      - REDIS_URL=redis://redis:6379
+      - BACKEND_PORT=3000
+      - CORS_ORIGIN=http://localhost:5173
+      - JWT_SECRET=supersecretjwtkey
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cex-network
+
+  engine:
+    build:
+      context: ./engine
+      dockerfile: Dockerfile
+    container_name: cex-engine
+    restart: unless-stopped
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - SNAPSHOT_PATH=/app/snapshots/latest.json
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - cex-network
+
+  ws:
+    build:
+      context: ./Ws
+      dockerfile: Dockerfile
+    container_name: cex-ws
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - PORT=8080
+      - WS_PORT=8080
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - cex-network
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:3000
+        - VITE_WS_URL=ws://localhost:8080
+    container_name: cex-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - cex-network
+
+networks:
+  cex-network:
+    name: cex-network
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: cex-postgres-data

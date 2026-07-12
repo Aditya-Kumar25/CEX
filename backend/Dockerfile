@@ -1,10 +1,9 @@
-FROM node:20-slim
+FROM oven/bun:1-slim
 WORKDIR /app
-COPY package*.json ./
+COPY package.json bun.lock ./
+RUN bun install
 COPY prisma ./prisma/
-# Install all dependencies (including typescript and ts-node)
-RUN npm install
-RUN npx prisma generate
+RUN bunx prisma generate
 COPY . .
 EXPOSE 3000
-CMD ["npx", "ts-node", "src/index.ts"]
+CMD ["bun", "run", "src/index.ts"]
