@@ -1,9 +1,12 @@
 import WebSocket, { WebSocketServer } from "ws";
 import { createClient } from "redis";
+import { env } from "./config/env";
 
-const PORT = 8080;
+const PORT = env.PORT;
 
-const client = createClient().on("error", (err) =>
+const client = createClient({
+  url: env.REDIS_URL,
+}).on("error", (err) =>
   console.log("Redis Client Error", err),
 );
 
@@ -94,7 +97,7 @@ const wss = new WebSocketServer({
   host: "0.0.0.0",
 });
 
-console.log(`WS server listening on ws://localhost:${PORT}`);
+console.log(`WS server listening on port ${PORT}`);
 
 wss.on("connection", (socket) => {
   console.log("WS CLIENT CONNECTED");
