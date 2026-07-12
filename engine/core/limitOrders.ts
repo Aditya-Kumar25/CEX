@@ -55,7 +55,7 @@ export function matchLimitBuy(
       );
       pushDepthDelta(symbol, "asks", askPrice, qtyAtAskPrice);
 
-      flipBalance(userId, sellOrders.userId, matchedQty, askPrice, symbol);
+      flipBalance(userId, sellOrders.userId, matchedQty, askPrice, symbol, Number(incoming.price));
       console.log("BUY LIMIT MATCH FOUND");
 
       console.log({
@@ -164,7 +164,7 @@ export function matchLimitSell(
         executionPrice: buyprice,
         remainingBeforeTrade: rem,
       });
-      flipBalance(buyorder.userId, userId, matchedQty, buyprice, symbol);
+      flipBalance(buyorder.userId, userId, matchedQty, buyprice, symbol, Number(buyorder.price));
 
       const fill = {
         id: crypto.randomUUID(),

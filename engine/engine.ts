@@ -27,8 +27,10 @@ while (1) {
   const parsed = JSON.parse(response.element);
 
   if (parsed.req_type === "order") {
-    const { type, price, qty, side, status, symbol, userId, identifier } =
-      parsed;
+    const type = parsed.type;
+    const price = Number(parsed.price);
+    const qty = Number(parsed.qty);
+    const { side, status, symbol, userId, identifier } = parsed;
 
     ensureUserBalance(userId);
     const requiredAmt = price * qty;

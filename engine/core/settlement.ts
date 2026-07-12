@@ -6,6 +6,7 @@ export function flipBalance(
   qty: number,
   price: number,
   symbol: string,
+  buyerPrice?: number,
 ) {
   const buyerBalance = BALANCES[buyerId];
   const sellerBalance = BALANCES[sellerId];
@@ -16,6 +17,9 @@ export function flipBalance(
   }
 
   const tradeAmount = qty * price;
+  const buyerOriginalPrice = buyerPrice !== undefined ? buyerPrice : price;
+  const lockedDeduct = qty * buyerOriginalPrice;
+  const refund = lockedDeduct - tradeAmount;
 
   console.log("====== SETTLEMENT ======");
 
@@ -26,6 +30,9 @@ export function flipBalance(
     price,
     symbol,
     tradeAmount,
+    buyerOriginalPrice,
+    lockedDeduct,
+    refund,
   });
 
   let buyerSymbolBalance = buyerBalance[symbol];
@@ -40,7 +47,8 @@ export function flipBalance(
     sellerBalance[symbol] = sellerSymbolBalance;
   }
 
-  buyerBalance.INR.locked -= tradeAmount;
+  buyerBalance.INR.locked -= lockedDeduct;
+  buyerBalance.INR.available += refund;
   buyerSymbolBalance.available += qty;
 
   sellerSymbolBalance.locked -= qty;

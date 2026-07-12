@@ -49,7 +49,7 @@ export function matchMarketBuy(
       );
       pushDepthDelta(symbol, "asks", askPrice, qtyAtAskPrice);
 
-      flipBalance(userId, askOrder.userId, matchedQty, askPrice, symbol);
+      flipBalance(userId, askOrder.userId, matchedQty, askPrice, symbol, askPrice);
       console.log("MARKET BUY MATCH FOUND");
 
       console.log({
@@ -150,7 +150,7 @@ export function matchMarketSell(
         executionPrice: buyPrice,
         remainingBeforeTrade: rem,
       });
-      flipBalance(buyorder.userId, userId, matchedQty, buyPrice, symbol);
+      flipBalance(buyorder.userId, userId, matchedQty, buyPrice, symbol, Number(buyorder.price));
 
       const fill = {
         id: crypto.randomUUID(),
