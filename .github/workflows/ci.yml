@@ -22,7 +22,7 @@ jobs:
         if: matrix.service == 'Frontend'
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: Frontend/package.json
 
@@ -56,6 +56,8 @@ jobs:
       # Generate Prisma Client specifically for backend
       - name: Generate Prisma Client (backend)
         if: matrix.service == 'backend'
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/CEX
         run: |
           cd backend
           bunx prisma generate
@@ -65,7 +67,7 @@ jobs:
         run: |
           cd ${{ matrix.service }}
           if [ "${{ matrix.service }}" = "Frontend" ]; then
-            npm run build -- --noEmit
+            npx tsc --noEmit
           else
             bunx tsc --noEmit
           fi
@@ -95,12 +97,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Set lowercase service name
+        id: lower-service
+        run: echo "service_lower=$(echo ${{ matrix.service }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Build Docker Image
         uses: docker/build-push-action@v6
         with:
           context: ./${{ matrix.service }}
           file: ./${{ matrix.service }}/Dockerfile
           push: false
-          tags: cex-${{ matrix.service }}:latest
+          tags: cex-${{ steps.lower-service.outputs.service_lower }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
