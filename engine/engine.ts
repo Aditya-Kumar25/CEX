@@ -38,6 +38,7 @@ while (1) {
     continue;
   }
   const parsed = JSON.parse(response.element);
+  console.log("ENGINE RECEIVED:", parsed.req_type);
 
   if (parsed.req_type === "order") {
     const type = parsed.type;
@@ -209,7 +210,7 @@ while (1) {
   } else if (parsed.req_type === "delete-order") {
     const { orderId, currentUser, identifier } = parsed;
     await cancelOrder(orderId, currentUser, identifier);
-  } else if (parsed.req_type === "get orders") {
+  } else if (parsed.req_type === "get-orders") {
     console.log(ORDERS);
     const { userId, identifier } = parsed;
     const orders = ORDERS.filter((o) => o.userId === userId);
@@ -278,6 +279,7 @@ while (1) {
       }),
     );
   } else if (parsed.req_type === "get-stocks") {
+     console.log("SENDING STOCKS");
     const { identifier } = parsed;
 
     await publisherClient.lPush(
