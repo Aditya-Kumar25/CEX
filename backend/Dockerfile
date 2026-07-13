@@ -6,4 +6,4 @@ COPY prisma ./prisma/
 RUN bunx prisma generate
 COPY . .
 EXPOSE 3000
-CMD ["bun", "run", "src/index.ts"]
+CMD ["sh", "-c", "bunx prisma db push && bun run src/index.ts"]
