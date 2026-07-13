@@ -1,4 +1,7 @@
+import { createServer } from "node:http";
 import WebSocket, { WebSocketServer } from "ws";
+import express from "express";
+import type { Request, Response } from "express";
 import { createClient } from "redis";
 import { env } from "./config/env";
 
@@ -92,12 +95,21 @@ async function poll() {
 
 poll();
 
-const wss = new WebSocketServer({
-  port: PORT,
-  host: "0.0.0.0",
+const app = express();
+
+app.get("/healthz", (req: Request, res: Response) => {
+  res.send("OK");
 });
 
-console.log(`WS server listening on port ${PORT}`);
+const server = createServer(app);
+
+const wss = new WebSocketServer({
+  server,
+});
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`WS server listening on port ${PORT}`);
+});
 
 wss.on("connection", (socket) => {
   console.log("WS CLIENT CONNECTED");
