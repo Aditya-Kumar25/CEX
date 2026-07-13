@@ -210,7 +210,7 @@ while (1) {
   } else if (parsed.req_type === "delete-order") {
     const { orderId, currentUser, identifier } = parsed;
     await cancelOrder(orderId, currentUser, identifier);
-  } else if (parsed.req_type === "get-orders") {
+  } else if (parsed.req_type === "get orders") {
     console.log(ORDERS);
     const { userId, identifier } = parsed;
     const orders = ORDERS.filter((o) => o.userId === userId);
