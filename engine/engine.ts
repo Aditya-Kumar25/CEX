@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import express from "express";
+import type { Request, Response } from "express";
 import { client, publisherClient } from "./config/redis";
 import type { Order } from "./types";
 import { STOCKS, ORDERS, ORDERBOOK } from "./core/orderbook";
@@ -10,6 +12,17 @@ import { estimateMarketBuyCost } from "./core/marketOrders";
 import { cancelOrder } from "./core/cancellation";
 import { loadSnapshot } from "./persistence/loadsnapshot";
 import { saveSnapshot } from "./persistence/savesnapshot";
+
+const app = express();
+const PORT = process.env.PORT || 10000;
+
+app.get("/healthz", (req: Request, res: Response) => {
+  res.send("OK");
+});
+
+app.listen(PORT, () => {
+  console.log(`[Engine Health Server] Listening on port ${PORT}`);
+});
 
 await loadSnapshot();
 
