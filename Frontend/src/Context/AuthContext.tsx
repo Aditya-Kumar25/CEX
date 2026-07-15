@@ -8,6 +8,7 @@ import {
 import {
   getToken,
   loginUser,
+  loginGoogleUser,
   logoutUser,
 } from "../Services/auth";
 
@@ -19,6 +20,7 @@ type LoginInput = {
 type AuthContextType = {
   authenticated: boolean;
   login: (input: LoginInput) => Promise<void>;
+  loginGoogle: (token: string) => Promise<void>;
   logout: () => void;
 };
 
@@ -39,6 +41,12 @@ export function AuthProvider({
     setAuthenticated(true);
   }
 
+  async function loginGoogle(token: string) {
+    await loginGoogleUser(token);
+
+    setAuthenticated(true);
+  }
+
   function logout() {
     logoutUser();
 
@@ -50,6 +58,7 @@ export function AuthProvider({
       value={{
         authenticated,
         login,
+        loginGoogle,
         logout,
       }}
     >

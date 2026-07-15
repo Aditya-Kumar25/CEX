@@ -41,6 +41,20 @@ export async function signupUser(
   });
 }
 
+export async function loginGoogleUser(token: string) {
+  const data = await apiRequest<LoginResponse>(
+    "/auth/google",
+    {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    },
+  );
+
+  localStorage.setItem("token", data.token);
+
+  return data;
+}
+
 export function logoutUser() {
   localStorage.removeItem("token");
 }

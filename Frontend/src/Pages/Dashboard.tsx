@@ -155,7 +155,7 @@ function TradingDashboard({
   } = useTrades(symbol);
 
   return (
-    <div className="min-h-screen max-h-screen flex flex-col bg-[#0C0C0E] text-zinc-100 overflow-hidden">
+    <div className="min-h-screen max-h-screen flex flex-col bg-[#09080F] text-zinc-100 overflow-hidden">
       {/* Header */}
       <MarketHeader
         symbol={symbol}
@@ -214,7 +214,7 @@ function TradingDashboard({
         </div>
 
         {/* Bottom Activity Section (User Active/Closed Orders) */}
-        <div className="h-[220px] shrink-0 border-t border-zinc-800">
+        <div className="h-[220px] shrink-0 border-t border-[#201D2D]">
           <UserOrders
             refreshKey={refreshKey}
             onOrderChanged={onRefresh}

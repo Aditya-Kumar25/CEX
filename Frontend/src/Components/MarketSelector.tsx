@@ -25,24 +25,24 @@ export default function MarketSelector({
 
   if (loading) {
     return (
-      <div className="h-10 px-4 flex items-center border-b border-zinc-800 bg-zinc-950/40">
-        <span className="text-xs text-zinc-500">Loading markets...</span>
+      <div className="h-10 px-4 flex items-center border-b border-[#201D2D] bg-[#0E0D16]">
+        <span className="text-xs text-[#8E8A9F] animate-pulse">Loading markets...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="h-10 px-4 flex items-center border-b border-zinc-800 bg-zinc-950/40">
-        <span className="text-xs text-rose-500">{error}</span>
+      <div className="h-10 px-4 flex items-center border-b border-[#201D2D] bg-[#0E0D16]">
+        <span className="text-xs text-rose-400 font-mono">{error}</span>
       </div>
     );
   }
 
   return (
-    <nav className="h-10 px-4 border-b border-zinc-800 bg-zinc-950/50 flex items-center space-x-1.5 overflow-x-auto select-none">
-      <span className="text-[10px] text-zinc-500 font-semibold tracking-wider uppercase mr-3">
-        Markets:
+    <nav className="h-10 px-4 border-b border-[#201D2D] bg-[#0E0D16] flex items-center space-x-2 overflow-x-auto select-none">
+      <span className="text-[10px] text-[#5A566A] font-bold uppercase tracking-wider mr-2">
+        Active Markets:
       </span>
       {stocks.map((stock) => {
         const isActive = stock.symbol === activeSymbol;
@@ -51,10 +51,10 @@ export default function MarketSelector({
             key={stock.id}
             type="button"
             onClick={() => selectMarket(stock.symbol)}
-            className={`text-xs font-mono font-medium px-3 py-1 rounded border transition-all cursor-pointer ${
+            className={`text-xs font-mono font-bold px-3 py-1 rounded-lg border transition-all cursor-pointer ${
               isActive
-                ? "text-zinc-100 bg-zinc-900 border-zinc-700/80"
-                : "text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-zinc-900/30 hover:border-zinc-800"
+                ? "text-white bg-[#1E1B2C] border-purple-800/40 shadow-sm shadow-purple-950/20"
+                : "text-[#8E8A9F] border-transparent hover:text-zinc-200 hover:bg-[#1C1926]/30 hover:border-[#2B273D]/50"
             }`}
           >
             {stock.symbol}

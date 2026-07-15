@@ -9,26 +9,25 @@ import {
   useNavigate,
 } from "react-router-dom";
 
+import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../Context/AuthContext";
+import bearImage from "../assets/bear.jpg";
 
 export default function Login() {
   const {
     login,
+    loginGoogle,
     authenticated,
   } = useAuth();
 
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
-  const [password, setPassword] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] = useState<
-    string | null
-  >(null);
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (authenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -59,23 +58,76 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0C0C0E] flex items-center justify-center p-4 select-none">
-      <div className="w-full max-w-sm bg-zinc-950 border border-zinc-850 p-6 rounded-md">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <h1 className="text-lg font-bold text-zinc-100 tracking-tight">Login</h1>
-            <p className="text-xs text-zinc-500 font-medium">Access your CEX Trading Terminal</p>
+    <div className="min-h-screen bg-[#09080F] flex items-center justify-center p-4 md:p-8 select-none">
+      {/* Outer Card Wrapper */}
+      <div className="w-full max-w-4xl bg-[#12111A]/90 border border-[#201D2D] rounded-2xl overflow-hidden shadow-2xl shadow-purple-950/20 grid grid-cols-1 md:grid-cols-2">
+        
+        {/* Left Column - Bear Hero Illustration */}
+        <div className="relative hidden md:block overflow-hidden min-h-[500px]">
+          {/* Background Image */}
+          <img 
+            src={bearImage} 
+            alt="Bear Market Hero" 
+            className="absolute inset-0 w-full h-full object-cover scale-105"
+          />
+          {/* Gradients Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#12111A] via-[#12111A]/10 to-[#12111A]/40" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#12111A]" />
+          
+          {/* Brand Logo & Tagline */}
+          <div className="absolute inset-0 p-8 flex flex-col justify-between z-10">
+            <div className="flex items-center space-x-2">
+              <span className="text-xl font-bold text-white tracking-wider font-mono bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent">
+                ALLINVEGAS
+              </span>
+              <span className="text-[10px] text-purple-400 font-bold px-1.5 py-0.5 rounded bg-purple-950/40 border border-purple-800/30 uppercase tracking-widest">
+                CEX
+              </span>
+            </div>
+            
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-white leading-tight tracking-tight max-w-xs">
+                Conquer the Bear, Lock in the Yield
+              </h2>
+              <p className="text-xs text-purple-300/80 max-w-xs leading-relaxed">
+                Connect to the ultimate high-frequency trading terminal and navigate market trends with institutional-grade speed.
+              </p>
+              {/* Mockup Pagination Indicators */}
+              <div className="flex space-x-2 pt-2">
+                <div className="w-6 h-1 rounded bg-purple-500 transition-all" />
+                <div className="w-2 h-1 rounded bg-purple-950 border border-purple-800/30" />
+                <div className="w-2 h-1 rounded bg-purple-950 border border-purple-800/30" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column - Login Form */}
+        <div className="p-8 flex flex-col justify-center bg-[#12111A]">
+          <div className="mb-6 space-y-1">
+            <h1 className="text-2xl font-bold text-white tracking-tight">
+              Welcome back
+            </h1>
+            <p className="text-xs text-[#8E8A9F]">
+              Don't have an account?{" "}
+              <Link 
+                to="/register" 
+                className="text-purple-400 hover:text-purple-300 font-semibold transition-colors"
+              >
+                Sign up
+              </Link>
+            </p>
           </div>
 
           {error && (
-            <div className="p-2.5 rounded bg-rose-950/20 border border-rose-900/40 text-[10px] text-rose-400 font-mono break-all">
+            <div className="mb-4 p-3 rounded-lg bg-rose-950/20 border border-rose-900/40 text-xs text-rose-400 font-mono break-all">
               {error}
             </div>
           )}
 
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <label className="text-[10px] uppercase font-semibold tracking-wider text-zinc-500">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-bold tracking-wider text-[#8E8A9F]">
                 Email Address
               </label>
               <input
@@ -84,43 +136,127 @@ export default function Login() {
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@domain.com"
                 required
-                className="w-full bg-zinc-900/60 border border-zinc-800 focus:border-zinc-700/80 rounded px-3 py-2 text-xs text-zinc-100 placeholder-zinc-650 focus:outline-none transition-colors"
+                className="w-full bg-[#1C1926] border border-[#2B273D] focus:border-purple-600/80 rounded-lg px-3.5 py-2.5 text-xs text-white placeholder-[#5A566A] focus:outline-none transition-all"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] uppercase font-semibold tracking-wider text-zinc-500">
-                Password
-              </label>
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] uppercase font-bold tracking-wider text-[#8E8A9F]">
+                  Password
+                </label>
+                <a href="#" className="text-[10px] font-semibold text-purple-400 hover:text-purple-300">
+                  Forgot?
+                </a>
+              </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full bg-[#1C1926] border border-[#2B273D] focus:border-purple-600/80 rounded-lg px-3.5 py-2.5 pr-10 text-xs text-white placeholder-[#5A566A] focus:outline-none transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8E8A9F] hover:text-white transition-colors cursor-pointer"
+                >
+                  {showPassword ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 py-1">
               <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full bg-zinc-900/60 border border-zinc-800 focus:border-zinc-700/80 rounded px-3 py-2 text-xs text-zinc-100 placeholder-zinc-650 focus:outline-none transition-colors"
+                type="checkbox"
+                id="remember"
+                checked={rememberMe}
+                onChange={(event) => setRememberMe(event.target.checked)}
+                className="rounded border-[#2B273D] bg-[#1C1926] text-purple-600 focus:ring-purple-600/40 w-3.5 h-3.5 transition-colors cursor-pointer"
               />
+              <label htmlFor="remember" className="text-xs text-[#8E8A9F] cursor-pointer">
+                Keep me logged in
+              </label>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full text-xs font-semibold py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded transition-colors cursor-pointer disabled:bg-zinc-800 disabled:text-zinc-600 disabled:cursor-not-allowed"
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-
-          <p className="text-center text-xs text-zinc-500 mt-2 font-medium">
-            Don't have an account?{" "}
-            <Link
-              to="/register"
-              className="text-zinc-300 hover:text-zinc-100 transition-colors font-semibold"
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full text-xs font-semibold py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg shadow-lg shadow-purple-900/20 transition-all cursor-pointer disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed disabled:shadow-none"
             >
-              Create Account
-            </Link>
-          </p>
-        </form>
+              {loading ? "Logging in..." : "Login to Terminal"}
+            </button>
+
+            {/* Social Logins Split Line */}
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-[#2B273D]"></div>
+              <span className="flex-shrink mx-4 text-[10px] text-[#5A566A] uppercase font-bold tracking-wider">
+                OR
+              </span>
+              <div className="flex-grow border-t border-[#2B273D]"></div>
+            </div>
+
+            {/* Google Button Overlay */}
+            <div className="relative overflow-hidden w-full">
+              <button
+                type="button"
+                className="flex items-center justify-center space-x-2 w-full py-2.5 px-4 bg-[#1C1926] hover:bg-[#232030] border border-[#2B273D] hover:border-purple-800/40 rounded-lg transition-all cursor-pointer text-xs text-white"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+                </svg>
+                <span>Continue with Google</span>
+              </button>
+              
+              <div className="absolute inset-0 opacity-0 cursor-pointer [&_iframe]:cursor-pointer scale-150 origin-center">
+                <GoogleLogin
+                  onSuccess={async (credentialResponse) => {
+                    const cred = credentialResponse.credential || "";
+                    console.log(`[Google Auth Frontend] Token type: ${typeof cred}, length: ${cred.length}`);
+                    console.log(`[Google Auth Frontend] Token start: ${cred.substring(0, 30)}...`);
+                    
+                    const clientID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+                    const last15Client = clientID.length > 15 ? `...${clientID.slice(-15)}` : clientID;
+                    console.log(`[Google Auth Frontend] Frontend VITE_GOOGLE_CLIENT_ID: ${last15Client}`);
+
+                    if (cred) {
+                      try {
+                        setLoading(true);
+                        setError(null);
+                        await loginGoogle(cred);
+                        navigate("/dashboard");
+                      } catch (err) {
+                        if (err instanceof Error) {
+                          setError(err.message);
+                        }
+                      } finally {
+                        setLoading(false);
+                      }
+                    }
+                  }}
+                  onError={() => {
+                    setError("Google authentication failed.");
+                  }}
+                />
+              </div>
+            </div>
+          </form>
+        </div>
+
       </div>
     </div>
   );

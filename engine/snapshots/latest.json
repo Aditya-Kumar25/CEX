@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "createdAt": "2026-07-12T08:00:13.085Z",
+  "createdAt": "2026-07-15T16:38:34.317Z",
   "engine": {
     "orderbook": {
       "TESLA": {
@@ -602,6 +602,42 @@
         "BTC": {
           "available": 0,
           "locked": 5
+        },
+        "TESLA": {
+          "available": 50,
+          "locked": 0
+        },
+        "SPACEX": {
+          "available": 50,
+          "locked": 0
+        }
+      },
+      "cmrmay7n90000t0fawv7tp3bz": {
+        "INR": {
+          "available": 1000000,
+          "locked": 0
+        },
+        "BTC": {
+          "available": 20,
+          "locked": 0
+        },
+        "TESLA": {
+          "available": 50,
+          "locked": 0
+        },
+        "SPACEX": {
+          "available": 50,
+          "locked": 0
+        }
+      },
+      "cmrmazcox0001t0fa0i2gcwd6": {
+        "INR": {
+          "available": 1000000,
+          "locked": 0
+        },
+        "BTC": {
+          "available": 20,
+          "locked": 0
         },
         "TESLA": {
           "available": 50,
