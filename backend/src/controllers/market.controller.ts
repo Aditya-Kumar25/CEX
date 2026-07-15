@@ -38,8 +38,10 @@ export async function getFills(req: Request, res: Response): Promise<any> {
 
 export async function getStocks(req: Request, res: Response): Promise<any> {
   const identifier = crypto.randomUUID();
+  console.log(`[Backend Controller] GET /stocks received. Generated identifier: ${identifier}`);
 
   const returnedData: any = await fetchStocks(identifier);
+  console.log(`[Backend Controller] fetchStocks returned success: ${returnedData?.success} for identifier: ${identifier}`);
 
   if (!returnedData.success) {
     return res.status(returnedData.statusCode || 400).json({

@@ -50,6 +50,7 @@ services:
       - BACKEND_PORT=3000
       - CORS_ORIGIN=http://localhost:5173
       - JWT_SECRET=supersecretjwtkey
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-838596371692-a1k3m16lfsrrpag6g0nh63g6veb7j7jg.apps.googleusercontent.com}
     depends_on:
       postgres:
         condition: service_healthy
@@ -98,6 +99,7 @@ services:
       args:
         - VITE_API_URL=http://localhost:3000
         - VITE_WS_URL=ws://localhost:8080
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-838596371692-a1k3m16lfsrrpag6g0nh63g6veb7j7jg.apps.googleusercontent.com}
     container_name: cex-frontend
     restart: unless-stopped
     ports:

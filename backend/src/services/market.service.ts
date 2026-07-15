@@ -15,6 +15,7 @@ export async function fetchFills(symbol: string, identifier: string) {
 }
 
 export async function fetchStocks(identifier: string) {
+  console.log(`[Backend Service] fetchStocks called, pushing to queue with identifier: ${identifier}`);
   return pushToQueueAndWait({
     req_type: "get-stocks",
   }, identifier);

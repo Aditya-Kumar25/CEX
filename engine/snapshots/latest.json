@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "createdAt": "2026-07-15T16:38:34.317Z",
+  "createdAt": "2026-07-15T20:26:21.601Z",
   "engine": {
     "orderbook": {
       "TESLA": {
@@ -435,6 +435,19 @@
               "price": 1000,
               "filledqty": 0
             }
+          ],
+          "5000": [
+            {
+              "id": "8a25d0bc-75d6-49f0-b4ea-50d62e434c1f",
+              "userId": "cmrmazcox0001t0fa0i2gcwd6",
+              "symbol": "BTC",
+              "side": "BUY",
+              "type": "LIMIT",
+              "qty": 5,
+              "status": "PARTIAL",
+              "price": 5000,
+              "filledqty": 5
+            }
           ]
         },
         "asks": {
@@ -458,8 +471,19 @@
               "symbol": "BTC",
               "side": "SELL",
               "type": "LIMIT",
+              "qty": 0,
+              "status": "FILLED",
+              "price": 5000,
+              "filledqty": 0
+            },
+            {
+              "id": "c895fba7-3c24-4763-abaa-2693feae97d6",
+              "userId": "cmrmazcox0001t0fa0i2gcwd6",
+              "symbol": "BTC",
+              "side": "SELL",
+              "type": "LIMIT",
               "qty": 5,
-              "status": "PARTIAL",
+              "status": "OPEN",
               "price": 5000,
               "filledqty": 0
             }
@@ -596,12 +620,12 @@
       },
       "cmrhhzvi90003twfa5f9p4z9c": {
         "INR": {
-          "available": 1159985,
+          "available": 1184985,
           "locked": 0
         },
         "BTC": {
           "available": 0,
-          "locked": 5
+          "locked": 0
         },
         "TESLA": {
           "available": 50,
@@ -632,12 +656,12 @@
       },
       "cmrmazcox0001t0fa0i2gcwd6": {
         "INR": {
-          "available": 1000000,
-          "locked": 0
+          "available": 950000,
+          "locked": 25000
         },
         "BTC": {
           "available": 20,
-          "locked": 0
+          "locked": 5
         },
         "TESLA": {
           "available": 50,
@@ -1254,6 +1278,28 @@
         "status": "FILLED",
         "price": 0,
         "filledqty": 35
+      },
+      {
+        "id": "c895fba7-3c24-4763-abaa-2693feae97d6",
+        "userId": "cmrmazcox0001t0fa0i2gcwd6",
+        "symbol": "BTC",
+        "side": "SELL",
+        "type": "LIMIT",
+        "qty": 5,
+        "status": "OPEN",
+        "price": 5000,
+        "filledqty": 0
+      },
+      {
+        "id": "8a25d0bc-75d6-49f0-b4ea-50d62e434c1f",
+        "userId": "cmrmazcox0001t0fa0i2gcwd6",
+        "symbol": "BTC",
+        "side": "BUY",
+        "type": "LIMIT",
+        "qty": 5,
+        "status": "PARTIAL",
+        "price": 5000,
+        "filledqty": 5
       }
     ],
     "fills": [
@@ -1504,12 +1550,20 @@
         "symbol": "BTC",
         "price": 5000,
         "qty": 35
+      },
+      {
+        "id": "77bd28c3-bc69-4d79-b6f5-e666dae5cbf9",
+        "buyOrderId": "8a25d0bc-75d6-49f0-b4ea-50d62e434c1f",
+        "sellOrderId": "10ce0b26-c575-4f7b-b437-32e9412eb709",
+        "symbol": "BTC",
+        "price": 5000,
+        "qty": 5
       }
     ],
     "depthOffset": {
       "TESLA": 19,
       "SPACEX": 29,
-      "BTC": 20
+      "BTC": 23
     }
   }
 }

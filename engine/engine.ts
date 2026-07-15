@@ -38,7 +38,7 @@ while (1) {
     continue;
   }
   const parsed = JSON.parse(response.element);
-  console.log("ENGINE RECEIVED:", parsed.req_type);
+  console.log(`[Engine] Pop received from 'incoming-order'. req_type: ${parsed.req_type}, identifier: ${parsed.identifier}`);
 
   if (parsed.req_type === "order") {
     const type = parsed.type;
@@ -279,9 +279,10 @@ while (1) {
       }),
     );
   } else if (parsed.req_type === "get-stocks") {
-     console.log("SENDING STOCKS");
     const { identifier } = parsed;
+    console.log(`[Engine] Entering 'get-stocks' handler, identifier: ${identifier}`);
 
+    console.log(`[Engine] Pushing stocks response to 'response-queue', identifier: ${identifier}`);
     await publisherClient.lPush(
       "response-queue",
       JSON.stringify({
